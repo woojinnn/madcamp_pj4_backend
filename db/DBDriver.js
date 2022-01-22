@@ -4,10 +4,11 @@ update information in the database.
 */
 const user = require("./userSchema")
 const wtm = require("./wtmSchema")
+const appt = require("./apptSchema")
 
 const mongoose = require("mongoose")
-const bcrypt = require("bcryptjs");
-const { exists } = require("./userSchema");
+const bcrypt = require("bcryptjs")
+const { exists } = require("./userSchema")
 
 mongoose.Promise = global.Promise;
 const MONGO_URI = "mongodb://localhost/week4_0"
@@ -131,7 +132,7 @@ class DBDriver {
         try {
             const salt = await bcrypt.genSalt()
             const hashPromise = bcrypt.hash(password, salt)
-            
+
             let newUser = new user()
             newUser.userEmail = userEmail
             newUser.userName = userName
@@ -994,6 +995,38 @@ class DBDriver {
         } catch (error) {
             console.log(error)
             throw new Error("Error on remindUsers inside DBDriver")
+        }
+    }
+
+
+    // ** Appointment **
+    /**
+     * Create new Appointment
+     * @param {String} apptName - name of appointment
+     * @param {Date} apptTime - Date and Time of appointment
+     * @param {Point} apptDest - destination of appointment
+     * @return {Promise<Boolean>}
+     */
+    static async createAppt(apptName, apptTime, apptDest) {
+        try {
+            const targetOwner = await user.findOne({ userName: creatorUserName })
+            if (targetOwner === null) return null
+            let targetIdentifier = Math.round(Math.random() * 100000)
+            while (await wtm.findOne({ identifier: targetIdentifier }) !== null) {
+                targetIdentifier = Math.round(Math.random() * 100000)
+            }
+
+            let newAppt = new appt()
+            newAppt.name = apptName
+            newAppt.time = apptTime
+            newAppt.destination = apptDest
+
+            const saveAppt = await newAppt.save()
+            return saveAppt
+        }
+        catch (error) {
+            console.log(error)
+            throw new Error("Error on Appointment Creation")
         }
     }
 }

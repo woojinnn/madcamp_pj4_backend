@@ -10,7 +10,8 @@ let JWTStrategy = passportJWT.Strategy
 const secret = process.env.SECRET || "test"
 
 let jwtConfigOptions = {
-    jwtFromRequest: extractJWT.fromBodyField("jwt"),
+    // jwtFromRequest: extractJWT.fromBodyField("jwt"),
+    jwtFromRequest: extractJWT.fromHeader('jwt'),
     secretOrKey: secret
 }
 

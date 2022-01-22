@@ -9,7 +9,7 @@ const extractJWT = passportJWT.ExtractJwt;
 const JWTStrategy = passportJWT.Strategy;
 
 const jwtConfigOptions = {
-    jwtFromRequest: extractJWT.fromBodyField("jwt"),
+    jwtFromRequest: extractJWT.fromHeader('jwt'),
     secretOrKey: secret
 };
 
@@ -29,9 +29,9 @@ module.exports = function (passport) {
     const router = express.Router()
 
     // Gets messages in user's inbox and sends back as string
-    router.post('/get-msgs', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    router.get('/get-msgs', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
 
             let userID
             try {
@@ -65,7 +65,7 @@ module.exports = function (passport) {
     // Clears messages in user's inbox
     router.post('/clear-msgs', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
 
             let userID
             try {
@@ -97,9 +97,9 @@ module.exports = function (passport) {
 
 
     // Gets a user's admin wtms
-    router.post('/owner-wtms', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    router.get('/owner-wtms', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
 
             const userId = getIdFromToken(token)
             const resObj = await DBDriver.getOwnerWTMs(userId)
@@ -112,9 +112,9 @@ module.exports = function (passport) {
     })
 
     // Get guest events
-    router.post('/guest-wtms', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    router.get('/guest-wtms', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
 
             const userId = getIdFromToken(token)
             const resObj = await DBDriver.getGuestWTMs(userId)

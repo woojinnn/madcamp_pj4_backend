@@ -10,7 +10,7 @@ const extractJWT = passportJWT.ExtractJwt;
 const JWTStrategy = passportJWT.Strategy;
 
 const jwtConfigOptions = {
-    jwtFromRequest: extractJWT.fromBodyField("jwt"),
+    jwtFromRequest: extractJWT.fromHeader('jwt'),
     secretOrKey: secret
 };
 
@@ -35,7 +35,7 @@ module.exports = function (passport) {
     // Create a new wtm and save it to the database
     router.post("/create", passport.authenticate('jwt', { session: false }), async (req, res) => {
         const wtmName = req.body.wtmName
-        const token = req.body.jwt
+        const token = req.header('jwt')
         let dateRange = req.body.dateRange
         let startTime = req.body.startTime
         let endTime = req.body.endTime
@@ -102,9 +102,9 @@ module.exports = function (passport) {
      * CREATED WTM INTERACTIONS
      */
     // Gets users for an wtm
-    router.post('/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    router.get('/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const wtmId = req.body.wtmId
+            const wtmId = req.query.wtmId
             if (wtmId === undefined) {
                 res.status(400)
                 res.send("ERROR: WTM ID REQUIRED")
@@ -127,7 +127,7 @@ module.exports = function (passport) {
     // Accept the user's responses for an wtm
     router.post('/respond', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
             let times = req.body.times
             const wtmId = req.body.wtmId
             if (wtmId === undefined || token === undefined || times === undefined) {
@@ -159,10 +159,10 @@ module.exports = function (passport) {
     })
 
     // Retrieve the information associated with a given wtmID
-    router.post('/info', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    router.get('/info', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
-            const wtmId = req.body.wtmId
+            const token = req.header('jwt')
+            const wtmId = req.query.wtmId
             if (wtmId === undefined) {
                 res.status(400)
                 res.json({ error: "ERROR: WTM ID REQUIRED" })
@@ -199,7 +199,7 @@ module.exports = function (passport) {
     router.post('/invite', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
             const wtmId = req.body.wtmId
-            const token = req.body.jwt
+            const token = req.header('jwt')
             if (wtmId === undefined) {
                 res.status(400)
                 res.json({ error: "ERROR: WTM ID REQUIRED" })
@@ -255,7 +255,7 @@ module.exports = function (passport) {
     // Uses nodeMailer API
     /*
     router.post('/inviteNonUser', passport.authenticate('jwt', { session: false }), async (req, res) => {
-        let token = req.body.jwt;
+        let token = req.header('jwt');
 
         try {
             let decode = JWT.verify(token, secret);
@@ -302,7 +302,7 @@ module.exports = function (passport) {
     // Removes a guest from the wtm
     router.post('/removeGuest', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
             const wtmID = req.body.wtmId
 
             let userID
@@ -334,7 +334,7 @@ module.exports = function (passport) {
     // Accept an invite to an wtm
     router.post('/accept', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
             const wtmID = req.body.wtmId
 
             let userID
@@ -363,7 +363,7 @@ module.exports = function (passport) {
     router.post('/reject', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
             const wtmId = req.body.wtmId
-            const token = req.body.jwt
+            const token = req.header('jwt')
 
             let userId
             try {
@@ -391,7 +391,7 @@ module.exports = function (passport) {
     // Allows an owner to delete an wtm
     router.post('/delete', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
             const wtmID = req.body.wtmId
 
             const userID = getIdFromToken(token)
@@ -407,7 +407,7 @@ module.exports = function (passport) {
     // Reminds users to respond to wtm invite
     router.post('/remind-users', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const token = req.body.jwt
+            const token = req.header('jwt')
             const wtmId = req.body.wtmId
 
             const userId = getIdFromToken(token)

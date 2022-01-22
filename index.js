@@ -2,9 +2,9 @@
 const express = require("express")
 const bodyParser = require("body-parser")
 const helmet = require("helmet")
-const JWT = require("jsonwebtoken")
-const passportJWT = require("passport-jwt")
-const nodemailer = require("nodemailer")
+// const JWT = require("jsonwebtoken")
+// const passportJWT = require("passport-jwt")
+// const nodemailer = require("nodemailer")
 
 const app = express()
 

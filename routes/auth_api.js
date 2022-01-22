@@ -9,7 +9,7 @@ const extractJWT = passportJWT.ExtractJwt;
 const JWTStrategy = passportJWT.Strategy;
 
 const jwtConfigOptions = {
-    jwtFromRequest: extractJWT.fromBodyField("jwt"),
+    jwtFromRequest: extractJWT.fromHeader('jwt'),
     secretOrKey: secret
 };
 
@@ -22,12 +22,12 @@ module.exports = function (passport) {
      */
 
     // Check if a username has been used
-    router.post('/userNameExists', async function (req, res) {
+    router.get('/userNameExists', async function (req, res) {
         try {
-            if (req.body.username === '') {
+            if (req.query.username === '') {
                 res.status(200)
                 res.json({ result: 'empty query' })
-            } else if (await DBDriver.userNameExists(req.body.username)) {
+            } else if (await DBDriver.userNameExists(req.query.username)) {
                 // userName exists
                 res.status(200)
                 res.json({ result: true })
@@ -43,12 +43,12 @@ module.exports = function (passport) {
     })
 
     // Check if a username has been used
-    router.post('/userEmailExists', async function (req, res) {
+    router.get('/userEmailExists', async function (req, res) {
         try {
-            if (req.body.userEmail === '') {
+            if (req.query.userEmail === '') {
                 res.status(200)
                 res.json({ result: 'empty query' })
-            } else if (await DBDriver.userEmailExists(req.body.userEmail)) {
+            } else if (await DBDriver.userEmailExists(req.query.userEmail)) {
                 // userName exists
                 res.status(200)
                 res.json({ result: true })
@@ -84,7 +84,7 @@ module.exports = function (passport) {
 
     // reset Password
     router.post('/reset-password', passport.authenticate('jwt', { session: false }), async function (req, res) {
-        const token = req.body.jwt
+        const token = req.header('jwt')
         const newPassword = req.body.newPassword
         let userId
         try {
