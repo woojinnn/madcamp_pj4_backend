@@ -34,7 +34,7 @@ module.exports = function (passport) {
      * Appointment CREATION AND MODIFICATION
      */
 
-    // Create a new wtm and save it to the database
+    // Create a new appt and save it to the database
     router.post("/create", passport.authenticate('jwt', { session: false }), async (req, res) => {
         const token = req.header('jwt')
         const apptName = req.body.apptName
@@ -109,7 +109,7 @@ module.exports = function (passport) {
         } catch (error) {
             console.log(error)
             res.status(500)
-            res.json({ error: "error on wtm creation" })
+            res.json({ error: "error on appt creation" })
         }
     })
 
@@ -190,62 +190,120 @@ module.exports = function (passport) {
         }
     })
 
-    // // Invites a user to a specified appt
-    // router.post('/invite', passport.authenticate('jwt', {session: false}), async(req, res) => {
-    //     try {
-    //         const apptId = req.body.apptId
-    //         const token = req.header('jwt')
-    //         if (apptId === undefined) {
-    //             res.status(400)
-    //             res.json({error: "ERROR: apptId required"})
-    //         }
-    //         let userId
-    //         try {
-    //             userId = getIdFromToken(token)
-    //         } catch (error) {
-    //             res.status(400)
-    //             res.json({
-    //                 error: "improperly formatted token"
-    //             })
-    //         }
+    // Invites a user to a specified appt
+    router.post('/invite', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const apptId = req.body.apptId
+            const token = req.header('jwt')
+            if (apptId === undefined) {
+                res.status(400)
+                res.json({ error: "ERROR: apptId required" })
+            }
+            let userId
+            try {
+                userId = getIdFromToken(token)
+            } catch (error) {
+                res.status(400)
+                return res.json({
+                    error: "improperly formatted token"
+                })
+            }
 
-    //         let invited = req.body.invitedUserNames
-    //         if (invited === undefined) {
-    //             res.status(400)
-    //             res.json({ error: "no users invited" })
-    //         }
-    //         let promiseArray = []
-    //         invited.forEach((element) => {
-    //             let invitePromise = DBDriver.inviteApptUser(apptId, userId, element)
-    //             promiseArray.push(invitePromise)
-    //         })
-    //         for (let i = 0; i < promiseArray.length; i++) {
-    //             promiseArray[i] = await promiseArray[i]
-    //         }
+            let invited = req.body.invitingUserNames
+            if (invited === undefined) {
+                res.status(400)
+                return res.json({ error: "no users invited" })
+            }
+            let promiseArray = []
+            invited.forEach((element) => {
+                let invitePromise = DBDriver.inviteApptUser(apptId, userId, element)
+                promiseArray.push(invitePromise)
+            })
+            for (let i = 0; i < promiseArray.length; i++) {
+                promiseArray[i] = await promiseArray[i]
+            }
 
-    //         // Check error
-    //         const baseErrorString = "errors with names: "
-    //         let errorString = "errors with names: "
-    //         for (let i = 0; i < promiseArray.length; i++) {
-    //             if (promiseArray[i] === null || !promiseArray[i]) {
-    //                 errorString += invited[i]
-    //             }
-    //         }
+            // Check error
+            const baseErrorString = "errors with names: "
+            let errorString = "errors with names: "
+            for (let i = 0; i < promiseArray.length; i++) {
+                if (promiseArray[i] === null || !promiseArray[i]) {
+                    errorString += invited[i]
+                }
+            }
 
-    //         res.status(200)
-    //         if (baseErrorString === errorString) {
-    //             res.json({ names: invited, error: "none" })
-    //         }
-    //         else {
-    //             res.json({ names: invited, error: errorString })
-    //         }
-    //     }
-    //     catch (error) {
-    //         console.log(error)
-    //         res.status(500)
-    //         res.json({error: error.message})
-    //     }
-    // })
+            res.status(200)
+            if (baseErrorString === errorString) {
+                res.json({ names: invited, error: "none" })
+            }
+            else {
+                res.json({ names: invited, error: errorString })
+            }
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
+
+    // Accept an invite to an appt
+    router.post('/accept', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+            const apptID = req.body.apptId
+
+            let userID
+            try {
+                userID = getIdFromToken(token)
+            } catch (error) {
+                res.status(400)
+                res.json({ error: "improperly formatted token" })
+            }
+
+            const acceptInvitePromise = DBDriver.addApptGuest(apptID, userID)
+            const acceptResult = await acceptInvitePromise
+            if (acceptResult == null) {
+                res.json({ error: "Guest did not successfully accept invitation" })
+            }
+            else {
+                res.json({ error: "none" })
+            }
+        } catch (error) {
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Reject an invite to an appt
+    router.post('/reject', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const apptId = req.body.apptId
+            const token = req.header('jwt')
+
+            let userId
+            try {
+                userId = getIdFromToken(token)
+            } catch (error) {
+                res.status(400)
+                res.json({ error: "improperly formatted token" })
+            }
+
+            const declineInvitePromise = DBDriver.declineApptInvite(apptId, userId)
+            const declineResult = await declineInvitePromise
+            if (declineResult === null) {
+                res.json({ error: "Guest did not successfully decline invitation" })
+            }
+            else {
+                res.json({ error: "none" })
+            }
+
+        } catch (error) {
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
 
     return router
 

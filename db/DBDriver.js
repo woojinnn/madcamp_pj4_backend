@@ -471,7 +471,7 @@ class DBDriver {
                 console.log("No such WTM")
                 return null
             }
-            else if (targetWTM.owner._id !== userID) {
+            else if (targetWTM.owner._id != userID) {
                 console.log("Only owner can invite")
                 return null
             }
@@ -484,25 +484,19 @@ class DBDriver {
                 return null
             }
             else {
-                const invitedIndex = targetWTM.invited.findIndex((element) => {
-                    return element === targetUser._id
-                })
+                const invitedIndex = targetWTM.invited.indexOf(targetUser._id)
                 if (invitedIndex !== -1) {
                     console.log("inviteUser: target user already invited")
                     return false
                 }
 
-                const acceptedIndex = targetWTM.accepted.findIndex((element) => {
-                    return element === targetUser._id
-                })
+                const acceptedIndex = targetWTM.accepted.indexOf(targetUser._id)
 
                 if (acceptedIndex !== -1) {
                     console.log("inviteUser: target user already accepted")
                     return false
                 }
-                const rejectedIndex = targetWTM.rejected.findIndex((element) => {
-                    return element === targetUser._id
-                })
+                const rejectedIndex = targetWTM.rejected.indexOf(targetUser._id)
 
                 if (rejectedIndex !== -1) {
                     console.log("inviteUser: target user rejected invitation...reinviting.")
@@ -553,17 +547,13 @@ class DBDriver {
                 if (targetUser === null) return null
                 else {
                     // Find the index of the the user within the accepted users of the wtm. 
-                    const wtmAcceptedIndex = targetWTM.accepted.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    const wtmAcceptedIndex = targetWTM.accepted.indexOf(targetUser._id)
                     if (wtmAcceptedIndex === -1) return "already left"
                     // Remove user from the accepted users of the wtm. 
                     targetWTM.accepted.splice(wtmAcceptedIndex, 1)
 
                     // Find the index of the wtm within the accepted wtms of the user. 
-                    const userAcceptedIndex = targetUser.participantWTMs.findIndex((element) => {
-                        return element === targetWTM._id
-                    })
+                    const userAcceptedIndex = targetUser.participantWTMs.indexOf(targetWTM._id)
                     if (userAcceptedIndex === -1) return null
                     // Remove wtm from the accepted wtms of the user. 
                     targetUser.participantWTMs.splice(userAcceptedIndex, 1)
@@ -671,17 +661,13 @@ class DBDriver {
                     }
 
                     // Update the user's fields: invitedWTMs, participantWTMs 
-                    const userInvitedIndex = targetUser.invitedWTMs.findIndex((element) => {
-                        return element === targetWTM._id
-                    })
+                    const userInvitedIndex = targetUser.invitedWTMs.indexOf(targetWTM._id)
                     if (userInvitedIndex === -1) {
                         console.log("addWTMGuest: targetUser was not invited to the wtm.")
                         return null
                     }
                     targetUser.invitedWTMs.splice(userInvitedIndex, 1)
-                    const userAcceptedIndex = targetUser.participantWTMs.findIndex((element) => {
-                        return element === targetWTM._id;
-                    })
+                    const userAcceptedIndex = targetUser.participantWTMs.indexOf(targetWTM._id)
                     if (userAcceptedIndex === -1) {
                         targetUser.participantWTMs.push(targetWTM._id)
                     }
@@ -868,9 +854,7 @@ class DBDriver {
                 if (targetUser === null) return null
                 else {
                     // Find the index of the the user within the invited users of the wtm. 
-                    const wtmInvitedIndex = targetWTM.invited.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    const wtmInvitedIndex = targetWTM.invited.indexOf(targetUser._id)
                     if (wtmInvitedIndex === -1) {
                         console.log("declineWTMInvite: guest not invited")
                         return null
@@ -878,9 +862,7 @@ class DBDriver {
                     // Remove user from the invited users of the wtm. 
                     targetWTM.invited.splice(wtmInvitedIndex, 1)
                     // Find the index of the wtm within the invited wtms of the user. 
-                    const userInvitedIndex = targetUser.invitedWTMs.findIndex((element) => {
-                        return element === targetWTM._id
-                    })
+                    const userInvitedIndex = targetUser.invitedWTMs.indexOf(targetWTM._id)
                     if (userInvitedIndex === -1) {
                         console.log("declineWTMInvite: wtm was not in the invited wtms of the user")
                         return null
@@ -1177,79 +1159,260 @@ class DBDriver {
         }
     }
 
-    // /**
-    //  * Invites a user to an appt
-    //  * @param {MongoID} ApptIdentifier 
-    //  * @param {userId} userID
-    //  * @param {username} targetUsername
-    //  * @return {boolean} valid invite
-    //  */
-    // static async inviteApptUser(apptIdentifier, userID, targetUserName) {
-    //     try {
-    //         const apptPromise = appt.findOne({ identifier: apptIdentifier })
-    //         const userPromise = user.findOne({ userName: targetUserName })
-    //         const targetAppt = await apptPromise
-    //         let targetUser = await userPromise
-    //         if (targetAppt === null) {
-    //             console.log("No such Appt")
-    //             return null
-    //         }
-    //         else if (targetAppt.owner._id !== userID) {
-    //             console.log("Only owner can invite")
-    //             return null
-    //         }
-    //         else if (targetUser === null) {
-    //             console.log("No such user")
-    //             return null
-    //         }
-    //         else if (targetUser._id == userID) {
-    //             console.log("Owner is trying to invite him/herself")
-    //             return null
-    //         }
-    //         else {
-    //             const invitedIndex = targetAppt.invited.findIndex((element) => {
-    //                 return element === targetUser._id
-    //             })
-    //             if (invitedIndex !== -1) {
-    //                 console.log("inviteUser: target user already invited")
-    //                 return false
-    //             }
+    /**
+     * Invites a user to an appt
+     * @param {MongoID} ApptIdentifier 
+     * @param {userId} userID
+     * @param {username} targetUsername
+     * @return {boolean} valid invite
+     */
+    static async inviteApptUser(apptIdentifier, userID, targetUserName) {
+        try {
+            const apptPromise = appt.findOne({ identifier: apptIdentifier })
+            const userPromise = user.findOne({ userName: targetUserName })
+            const targetAppt = await apptPromise
+            let targetUser = await userPromise
+            if (targetAppt === null) {
+                console.log("No such Appt")
+                return null
+            }
+            else if (targetAppt.owner._id != userID) {
+                console.log("Only owner can invite")
+                console.log(targetAppt.owner._id)
+                console.log(userID)
+                return null
+            }
+            else if (targetUser === null) {
+                console.log("No such user")
+                return null
+            }
+            else if (targetUser._id == userID) {
+                console.log("Owner is trying to invite him/herself")
+                return null
+            }
+            else {
+                const invitedIndex = targetAppt.invited.indexOf(targetUser._id)
+                if (invitedIndex !== -1) {
+                    console.log("inviteUser: target user already invited")
+                    return false
+                }
 
-    //             const acceptedIndex = targetAppt.accepted.findIndex((element) => {
-    //                 return element === targetUser._id
-    //             })
+                const acceptedIndex = targetAppt.accepted.indexOf(targetUser._id)
 
-    //             if (acceptedIndex !== -1) {
-    //                 console.log("inviteUser: target user already accepted")
-    //                 return false
-    //             }
-    //             const rejectedIndex = targetAppt.rejected.findIndex((element) => {
-    //                 return element === targetUser._id
-    //             })
+                if (acceptedIndex !== -1) {
+                    console.log("inviteUser: target user already accepted")
+                    return false
+                }
+                const rejectedIndex = targetAppt.rejected.indexOf(targetUser._id)
 
-    //             if (rejectedIndex !== -1) {
-    //                 console.log("inviteUser: target user rejected invitation...reinviting.")
-    //                 targetAppt.rejected.splice(rejectedIndex, 1)
-    //             }
-    //             targetAppt.invited.push(targetUser._id)
-    //             targetUser.invitedAppts.push(targetAppt._id)
+                if (rejectedIndex !== -1) {
+                    console.log("inviteUser: target user rejected invitation...reinviting.")
+                    targetAppt.rejected.splice(rejectedIndex, 1)
+                }
+                targetAppt.invited.push(targetUser._id)
+                targetUser.invitedAppts.push(targetAppt._id)
 
-    //             let newMessage = {}
-    //             const msg = "You have been invited to " + targetAppt.name + ". Click to accept/decline"
-    //             newMessage.message = msg
-    //             newMessage.apptIdentifier = apptIdentifier
-    //             targetUser.messages.push(newMessage)
+                let newMessage = {}
+                const msg = "You have been invited to " + targetAppt.name + ". Click to accept/decline"
+                newMessage.message = msg
+                newMessage.apptIdentifier = apptIdentifier
+                targetUser.messages.push(newMessage)
 
-    //             const targetPromise = targetAppt.save()
-    //             const userSavePromise = targetUser.save()
-    //             const targetPromiseResult = await targetPromise
-    //             const userSavePromiseResult = await userSavePromise
+                const targetPromise = targetAppt.save()
+                const userSavePromise = targetUser.save()
+                const targetPromiseResult = await targetPromise
+                const userSavePromiseResult = await userSavePromise
 
-    //             return true
-    //         }
-    //     } catch (error) {
-    //     }
-    // }
+                return true
+            }
+        } catch (error) {
+        }
+    }
+
+    /**
+     * Allows a user to decline an invite to an appt
+     * @param {apptId} apptIdentifier
+     * @param {userId} userID
+     * @return {boolean} whether function was fully run through
+     */
+    static async declineApptInvite(apptId, userId) {
+        try {
+            const apptPromise = appt.findOne({ identifier: apptId })
+            const userPromise = user.findById(userId)
+            const targetAppt = await apptPromise
+
+            if (targetAppt.owner._id == userId) {
+                console.log("Owner is trying to decline his/her own appt")
+                return null
+            }
+            else if (targetAppt === null) {
+                return null
+            }
+            else {
+                const targetUser = await userPromise
+                if (targetUser === null) return null
+                else {
+                    // Find the index of the the user within the invited users of the appt. 
+                    const apptInvitedIndex = targetAppt.invited.indexOf(targetUser._id)
+
+                    if (apptInvitedIndex === -1) {
+                        console.log("declineApptInvite: guest not invited")
+                        return null
+                    }
+                    // Remove user from the invited users of the appt. 
+                    targetAppt.invited.splice(apptInvitedIndex, 1)
+                    // Find the index of the appt within the invited appts of the user. 
+                    const userInvitedIndex = targetUser.invitedAppts.indexOf(targetAppt._id)
+                    if (userInvitedIndex === -1) {
+                        console.log("declineApptInvite: appt was not in the invited appts of the user")
+                        return null
+                    }
+                    // Remove appt from the invited appts of the user. 
+                    targetUser.invitedAppts.splice(userInvitedIndex, 1)
+
+                    // Add user to rejected users of appt
+                    targetAppt.rejected.push(targetUser)
+
+                    // Update notif for owner that someone has declined his/her appt. 
+                    let ownerPromise = user.findById(targetAppt.owner)
+                    let apptOwner = await ownerPromise
+                    if (apptOwner == null) {
+                        console.log("removeApptGuest: owner null")
+                    }
+
+                    let newMessage = {}
+                    newMessage.message = targetUser.userName + " has declined your appt invite for " + targetAppt.name
+                    newMessage.apptIdentifier = apptId
+                    apptOwner.messages.push(newMessage)
+
+                    // If invited list is empty, then notify the owner that everyone has responded
+                    if (targetAppt.invited.length === 0) {
+                        let newMessageApptDone = {}
+                        newMessageApptDone.message = "All guests have responded to your appt: " + targetAppt.name
+                        newMessageApptDone.apptIdentifier = apptId
+                        apptOwner.messages.push(newMessageApptDone)
+                    }
+
+                    let ownerSavePromise = apptOwner.save()
+                    let apptPromise = targetAppt.save()
+                    let userPromise = targetUser.save()
+                    await ownerSavePromise
+                    await apptPromise
+                    await userPromise
+
+                    return true
+                }
+            }
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on guest removal inside DBDriver")
+        }
+    }
+
+    /**
+     * Adds guest to an appt
+     * @param {MongoID} apptIdentifier 
+     * @param {userId} userID
+     * @return {boolean} function successful
+     */
+    static async addApptGuest(apptIdentifier, userID) {
+        try {
+            const apptPromise = appt.findOne({ identifier: apptIdentifier })
+            const targetAppt = await apptPromise
+            if (userID == targetAppt.owner._id) {
+                console.log("userID is owner")
+                return null
+            }
+            if (targetAppt === null) {
+                console.log("no such Appt")
+                return null
+            }
+            else {
+                const userPromise = user.findById(userID)
+                const targetUser = await userPromise
+                if (targetUser === null) {
+                    console.log("No such user")
+                    return null
+                }
+                else {
+                    // Find the index of the user within the rejected users of the appt.
+                    const apptRejectedIndex = targetAppt.rejected.indexOf(targetUser._id)
+                    // Return if user is already in the rejected guest list
+                    if (apptRejectedIndex !== -1) {
+                        console.log("addApptGuest: guest already rejected the appt")
+                        return null
+                    }
+
+                    // Find the index of the the user within the accepted users of the appt. 
+                    const apptAcceptedIndex = targetAppt.accepted.indexOf(targetUser._id)
+                    // Return if user is already in the accepted guest list
+                    if (apptAcceptedIndex !== -1) {
+                        console.log("addApptGuest: guest has already accepted invitation")
+                        return null
+                    }
+
+                    const apptInvitedIndex = targetAppt.invited.indexOf(targetUser._id)
+                    if (apptInvitedIndex === -1) {
+                        console.log("User has not invited. Invite before you add")
+                        return null
+                    }
+                    // Remove user from the invitee list 
+                    targetAppt.invited.splice(apptInvitedIndex, 1)
+                    // Add invited user to the accepted users of the appt. 
+                    targetAppt.accepted.push(targetUser._id)
+                    // If invited list is empty and everyone has responded, then notify the owner that everyone has responded
+                    if (targetAppt.invited.length === 0) {
+                        const ownerPromise = user.findById(targetAppt.owner)
+                        const apptOwner = await ownerPromise
+                        if (apptOwner == null) {
+                            console.log("addApptGuest: owner null")
+                        }
+
+                        let newMessage = {}
+                        newMessage.message = "All guests have responded to your appt: " + targetAppt.name
+                        newMessage.apptIdentifier = apptIdentifier
+                        apptOwner.messages.push(newMessage)
+                        const ownerSavePromise = apptOwner.save()
+                        await ownerSavePromise
+                    }
+
+                    // Update the user's fields: invitedAppts, participantAppts 
+                    const userInvitedIndex = targetUser.invitedAppts.indexOf(targetAppt._id)
+                    if (userInvitedIndex === -1) {
+                        console.log("addApptGuest: targetUser was not invited to the appt.")
+                        return null
+                    }
+                    targetUser.invitedAppts.splice(userInvitedIndex, 1)
+                    const userAcceptedIndex = targetUser.participantAppts.indexOf(targetAppt._id)
+                    if (userAcceptedIndex === -1) {
+                        targetUser.participantAppts.push(targetAppt._id)
+                    }
+                    const ownerPromise = user.findById(targetAppt.owner)
+                    const apptOwner = await ownerPromise
+                    if (apptOwner == null) {
+                        console.log("addApptGuest: owner null")
+                    }
+
+                    let newMessage = {}
+                    newMessage.message = targetUser.userName + " has joined your appt " + targetAppt.name
+                    newMessage.apptIdentifier = apptIdentifier
+                    apptOwner.messages.push(newMessage)
+                    const ownerSavePromise = apptOwner.save()
+
+                    const apptPromise = targetAppt.save()
+                    const userPromise = targetUser.save()
+                    await ownerSavePromise
+                    await apptPromise
+                    await userPromise
+
+                    return true
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            throw new Error("Error on appt invite acceptance inside DBDriver");
+        }
+    }
 
 
 }
