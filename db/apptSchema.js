@@ -7,9 +7,21 @@ let apptSchema = new Schema({
         type: String,
         required: true
     },
-    time: {
+    startTime: {
         type: Date,
         required: true
+    },
+    endTime: {
+        type: Date,
+    },
+    owner: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    identifier: {
+        type: Number,
+        unique: true
     },
     destination: {
         type: {
@@ -18,10 +30,13 @@ let apptSchema = new Schema({
         },
         coordinates: {
             type: [Number],
-            default: [0, 0]
         }
     },
-    members: {
+    invited: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    }],
+    accepted: {
         type: [{
             member: {
                 type: Schema.Types.ObjectId,
@@ -34,12 +49,15 @@ let apptSchema = new Schema({
                 },
                 coordinates: {
                     type: [Number],
-                    default: [0, 0]
                 }
             }
         }],
         default: []
-    }
+    },
+    rejected: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    }]
 })
 
 const appt = mongoose.model('Appt', apptSchema)

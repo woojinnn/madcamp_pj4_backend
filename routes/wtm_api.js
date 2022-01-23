@@ -41,7 +41,7 @@ module.exports = function (passport) {
         let endTime = req.body.endTime
         let invitedUsers = req.body.invitedUsers
         if (wtmName === undefined || token === undefined || startTime === undefined || endTime === undefined) {
-            res.status(401);
+            res.status(400);
             res.json({ error: "insufficient arguments sent" });
         }
 
@@ -53,27 +53,27 @@ module.exports = function (passport) {
             ownerUser = (await DBDriver.getUserFromId(id)).userName
             if (ownerUser === undefined || ownerUser === null) throw new Error("BAD ID")
         } catch (error) {
-            res.status(402)
+            res.status(400)
             res.json({ error: "improperly formatted token" })
         }
 
         let dateArray = []
         try {
             if (dateRange === undefined || !Array.isArray(dateRange)) {
-                res.status(403)
+                res.status(400)
                 res.json({ error: "improper date format4" })
             }
             else {
                 dateRange.forEach(element => {
                     if (Date.parse(element) < Date.now - 86400000) {
-                        res.status(404)
+                        res.status(400)
                         res.json({ error: "improper date format2" })
                     }
                     dateArray.push(Date.parse(element))
                 });
             }
         } catch (error) {
-            res.status(405)
+            res.status(400)
             res.json({ error: "improper date format1" })
         }
 
@@ -109,7 +109,7 @@ module.exports = function (passport) {
                 res.status(400)
                 res.send("ERROR: WTM ID REQUIRED")
             }
-            const users = await DBDriver.getUsers(wtmId)
+            const users = await DBDriver.getWTMUsers(wtmId)
             res.status(200)
             if (users === null) {
                 res.json({ error: "NOT FOUND" })
@@ -131,23 +131,23 @@ module.exports = function (passport) {
             let times = req.body.times
             const wtmId = req.body.wtmId
             if (wtmId === undefined || token === undefined || times === undefined) {
-                res.status(401)
+                res.status(400)
                 res.json({ error: "insufficient arguments sent" })
             }
 
             const userId = getIdFromToken(token)
             try {
                 if (times === undefined || !Array.isArray(times)) {
-                    res.status(403)
+                    res.status(400)
                     res.json({ error: "improper date format4" })
                 } else {
-                    const result = await DBDriver.addResponses(wtmId, userId, times)
+                    const result = await DBDriver.addWTMResponses(wtmId, userId, times)
 
                     res.status(200)
                     res.json({ wtm: result.responses, error: "false" })
                 }
             } catch (error) {
-                res.status(405)
+                res.status(400)
                 res.json({ error: error.message })
                 console.log(error)
             }
@@ -219,7 +219,7 @@ module.exports = function (passport) {
             }
             let promiseArray = []
             invited.forEach((element) => {
-                let invitePromise = DBDriver.inviteUser(wtmId, userId, element)
+                let invitePromise = DBDriver.inviteWTMUser(wtmId, userId, element)
                 promiseArray.push(invitePromise)
             })
             for (let i = 0; i < promiseArray.length; i++) {
@@ -313,7 +313,7 @@ module.exports = function (passport) {
                 res.json({ error: "improperly formatted token" })
             }
 
-            const removePromise = DBDriver.removeGuest(wtmID, userID)
+            const removePromise = DBDriver.removeWTMGuest(wtmID, userID)
             const removeResult = await removePromise
             if (removeResult === null) {
                 res.json({ error: "Guest not successfully removed" })
@@ -345,7 +345,7 @@ module.exports = function (passport) {
                 res.json({ error: "improperly formatted token" })
             }
 
-            const acceptInvitePromise = DBDriver.addGuest(wtmID, userID)
+            const acceptInvitePromise = DBDriver.addWTMGuest(wtmID, userID)
             const acceptResult = await acceptInvitePromise
             if (acceptResult == null) {
                 res.json({ error: "Guest did not successfully accept invitation" })
@@ -373,7 +373,7 @@ module.exports = function (passport) {
                 res.json({ error: "improperly formatted token" })
             }
 
-            const declineInvitePromise = DBDriver.declineInvite(wtmId, userId)
+            const declineInvitePromise = DBDriver.declineWTMInvite(wtmId, userId)
             const declineResult = await declineInvitePromise
             if (declineResult === null) {
                 res.json({ error: "Guest did not successfully decline invitation" })
@@ -389,10 +389,10 @@ module.exports = function (passport) {
     })
 
     // Allows an owner to delete an wtm
-    router.post('/delete', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    router.delete('/delete', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
             const token = req.header('jwt')
-            const wtmID = req.body.wtmId
+            const wtmID = req.query.wtmId
 
             const userID = getIdFromToken(token)
             await DBDriver.deleteWTM(wtmID, userID)
@@ -411,7 +411,7 @@ module.exports = function (passport) {
             const wtmId = req.body.wtmId
 
             const userId = getIdFromToken(token)
-            const result = await DBDriver.remindUsers(userId, wtmId)
+            const result = await DBDriver.remindWTMUsers(userId, wtmId)
             if (result == "Success") {
                 res.send("Success")
             }

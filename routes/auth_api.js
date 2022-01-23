@@ -100,7 +100,7 @@ module.exports = function (passport) {
         try {
             const returnVal = await DBDriver.resetPassword(userId, newPassword)
             res.status(200)
-            res.send(returnVal)
+            res.json({result: returnVal})
         }
         catch (error) {
             res.status(500)

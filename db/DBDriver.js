@@ -182,9 +182,9 @@ class DBDriver {
         try {
             const targetOwner = await user.findOne({ userName: creatorUserName })
             if (targetOwner === null) return null
-            let targetIdentifier = Math.round(Math.random() * 100000)
+            let targetIdentifier = Math.round(Math.random() * 1000)
             while (await wtm.findOne({ identifier: targetIdentifier }) !== null) {
-                targetIdentifier = Math.round(Math.random() * 100000)
+                targetIdentifier = Math.round(Math.random() * 1000)
             }
 
             let newWTM = new wtm()
@@ -235,7 +235,7 @@ class DBDriver {
      * @param {MongoID} wtmIdentifier 
      * @return {{accepted: String[], invited: String[], rejected: String[]}}
      */
-    static async getUsers(wtmIdentifier) {
+    static async getWTMUsers(wtmIdentifier) {
         try {
             let targetWTMPopulated = await
                 wtm.findOne({ identifier: wtmIdentifier }).
@@ -280,7 +280,7 @@ class DBDriver {
      * @param {userId} userID 
      * @return {wtm}
      */
-    static async addResponses(wtmIdentifier, userID, responsesArr) {
+    static async addWTMResponses(wtmIdentifier, userID, responsesArr) {
         try {
             const wtmPromise = wtm.findOne({ identifier: wtmIdentifier })
             const targetWTM = await wtmPromise
@@ -461,7 +461,7 @@ class DBDriver {
      * @param {username} targetUsername
      * @return {boolean} valid invite
      */
-    static async inviteUser(wtmIdentifier, userID, targetUserName) {
+    static async inviteWTMUser(wtmIdentifier, userID, targetUserName) {
         try {
             const wtmPromise = wtm.findOne({ identifier: wtmIdentifier })
             const userPromise = user.findOne({ userName: targetUserName })
@@ -535,7 +535,7 @@ class DBDriver {
      * @param {userId} userID
      * @return {boolean} function successfull
      */
-    static async removeGuest(wtmIdentifier, userID) {
+    static async removeWTMGuest(wtmIdentifier, userID) {
         try {
             const wtmPromise = wtm.findOne({ identifier: wtmIdentifier })
             const userPromise = user.findById(userID)
@@ -572,7 +572,7 @@ class DBDriver {
                     const ownerPromise = user.findById(targetWTM.owner)
                     const wtmOwner = await ownerPromise
                     if (wtmOwner == null) {
-                        console.log("removeGuest: null owner")
+                        console.log("removeWTMGuest: null owner")
                     }
                     let newMessage = {}
                     newMessage.message = targetUser.userName + " has left your wtm " + targetWTM.name
@@ -601,7 +601,7 @@ class DBDriver {
      * @param {userId} userID
      * @return {boolean} function successful
      */
-    static async addGuest(wtmIdentifier, userID) {
+    static async addWTMGuest(wtmIdentifier, userID) {
         try {
             const wtmPromise = wtm.findOne({ identifier: wtmIdentifier })
             const targetWTM = await wtmPromise
@@ -627,7 +627,7 @@ class DBDriver {
                     })
                     // Return if user is already in the rejected guest list
                     if (wtmRejectedIndex !== -1) {
-                        console.log("addGuest: guest already rejected the wtm")
+                        console.log("addWTMGuest: guest already rejected the wtm")
                         return null
                     }
 
@@ -637,14 +637,14 @@ class DBDriver {
                     })
                     // Return if user is already in the accepted guest list
                     if (wtmAcceptedIndex !== -1) {
-                        console.log("addGuest: guest has already accepted invitation")
+                        console.log("addWTMGuest: guest has already accepted invitation")
                         return null
                     }
 
                     const wtmInvitedIndex = targetWTM.invited.findIndex((element) => {
                         return element === targetUser._id
                     })
-                    console.log("addGuest: wtm invited index = " + wtmInvitedIndex)
+                    console.log("addWTMGuest: wtm invited index = " + wtmInvitedIndex)
                     if (wtmInvitedIndex === -1) {
                         console.log("User has not invited. Invite before you add")
                         return null
@@ -659,7 +659,7 @@ class DBDriver {
                         const ownerPromise = user.findById(targetWTM.owner)
                         const wtmOwner = await ownerPromise
                         if (wtmOwner == null) {
-                            console.log("addGuest: owner null")
+                            console.log("addWTMGuest: owner null")
                         }
 
                         let newMessage = {}
@@ -675,7 +675,7 @@ class DBDriver {
                         return element === targetWTM._id
                     })
                     if (userInvitedIndex === -1) {
-                        console.log("addGuest: targetUser was not invited to the wtm.")
+                        console.log("addWTMGuest: targetUser was not invited to the wtm.")
                         return null
                     }
                     targetUser.invitedWTMs.splice(userInvitedIndex, 1)
@@ -688,7 +688,7 @@ class DBDriver {
                     const ownerPromise = user.findById(targetWTM.owner)
                     const wtmOwner = await ownerPromise
                     if (wtmOwner == null) {
-                        console.log("addGuest: owner null")
+                        console.log("addWTMGuest: owner null")
                     }
 
                     let newMessage = {}
@@ -850,7 +850,7 @@ class DBDriver {
      * @param {userId} userID
      * @return {boolean} whether function was fully run through
      */
-    static async declineInvite(wtmId, userId) {
+    static async declineWTMInvite(wtmId, userId) {
         try {
             const wtmPromise = wtm.findOne({ identifier: wtmId })
             const userPromise = user.findById(userId)
@@ -872,7 +872,7 @@ class DBDriver {
                         return element === targetUser._id
                     })
                     if (wtmInvitedIndex === -1) {
-                        console.log("declineInvite: guest not invited")
+                        console.log("declineWTMInvite: guest not invited")
                         return null
                     }
                     // Remove user from the invited users of the wtm. 
@@ -882,7 +882,7 @@ class DBDriver {
                         return element === targetWTM._id
                     })
                     if (userInvitedIndex === -1) {
-                        console.log("declineInvite: wtm was not in the invited wtms of the user")
+                        console.log("declineWTMInvite: wtm was not in the invited wtms of the user")
                         return null
                     }
                     // Remove wtm from the invited wtms of the user. 
@@ -895,7 +895,7 @@ class DBDriver {
                     let ownerPromise = user.findById(targetWTM.owner)
                     let wtmOwner = await ownerPromise
                     if (wtmOwner == null) {
-                        console.log("removeGuest: owner null")
+                        console.log("removeWTMGuest: owner null")
                     }
 
                     let newMessage = {}
@@ -933,7 +933,7 @@ class DBDriver {
      * @param {wtmId} wtmIdentifier
      * @return {String} indicates result of method call
      */
-    static async remindUsers(userId, wtmId) {
+    static async remindWTMUsers(userId, wtmId) {
         try {
             // Retrieve wtm and user
             const wtmPromise = wtm
@@ -960,7 +960,7 @@ class DBDriver {
                 const innerUserPromise = user.findById(targetWTM.invited[i])
                 const innerUser = await innerUserPromise
                 if (innerUserPromise === null) {
-                    console.log("remindUsers: innerUserPromise invited null")
+                    console.log("remindWTMUsers: innerUserPromise invited null")
                     return "User could not be found"
                 }
                 innerUser.messages.push(newMessage)
@@ -968,7 +968,7 @@ class DBDriver {
                 const updateResult = await updateMsgPromise
                 if (updateResult === null) {
                     const errorMsg = "Could not update " + targetWTM.invited[i].userName + "'s messages."
-                    console.log("remindUsers: " + errorMsg)
+                    console.log("remindWTMUsers: " + errorMsg)
                     return errorMsg
                 }
             }
@@ -978,7 +978,7 @@ class DBDriver {
                 let innerUserPromise = user.findById(targetWTM.invited[i])
                 let innerUser = await innerUserPromise
                 if (innerUserPromise === null) {
-                    console.log("remindUsers: innerUserPromise accepted null")
+                    console.log("remindWTMUsers: innerUserPromise accepted null")
                     return "User could not be found"
                 }
                 innerUser.messages.push(newMessage)
@@ -986,7 +986,7 @@ class DBDriver {
                 let updateResult = await updateMsgPromise
                 if (updateResult === null) {
                     let errorMsg = "Could not update " + targetWTM.accepted[i].userName + "'s messages."
-                    console.log("remindUsers: " + errorMsg)
+                    console.log("remindWTMUsers: " + errorMsg)
                     return errorMsg
                 }
             }
@@ -994,7 +994,7 @@ class DBDriver {
             return "Success"
         } catch (error) {
             console.log(error)
-            throw new Error("Error on remindUsers inside DBDriver")
+            throw new Error("Error on remindWTMUsers inside DBDriver")
         }
     }
 
@@ -1007,21 +1007,30 @@ class DBDriver {
      * @param {Point} apptDest - destination of appointment
      * @return {Promise<Boolean>}
      */
-    static async createAppt(apptName, apptTime, apptDest) {
+    static async createAppt(apptName, apptStartTime, apptEndTime, apptDest, creatorID) {
         try {
-            const targetOwner = await user.findOne({ userName: creatorUserName })
-            if (targetOwner === null) return null
-            let targetIdentifier = Math.round(Math.random() * 100000)
-            while (await wtm.findOne({ identifier: targetIdentifier }) !== null) {
-                targetIdentifier = Math.round(Math.random() * 100000)
+            const creator = await user.findById(creatorID)
+
+            let targetIdentifier = Math.round(Math.random() * 1000)
+            while (await appt.findOne({ identifier: targetIdentifier }) !== null) {
+                targetIdentifier = Math.round(Math.random() * 1000)
             }
 
             let newAppt = new appt()
             newAppt.name = apptName
-            newAppt.time = apptTime
-            newAppt.destination = apptDest
+            newAppt.startTime = apptStartTime
+            newAppt.endTime = apptEndTime
+            newAppt.destination = {
+                type: 'Point',
+                coordinates: apptDest
+            }
+            newAppt.identifier = targetIdentifier
+            newAppt.owner = creatorID
 
             const saveAppt = await newAppt.save()
+            creator.ownedAppts.push(newAppt._id)
+            const savedOwnerPromise = await creator.save()
+
             return saveAppt
         }
         catch (error) {
@@ -1029,6 +1038,220 @@ class DBDriver {
             throw new Error("Error on Appointment Creation")
         }
     }
+
+    /**
+     * Gets user for an appt
+     * @param {MongoID} apptIdentifier 
+     */
+    static async getApptUsers(apptIdentifier) {
+        try {
+            const targetApptPopulated = await
+                appt.findOne({ identifier: apptIdentifier }).
+                    populate({ path: 'accepted.member', model: 'User', select: 'userName' }).
+                    populate({ path: 'invited', model: 'User', select: 'userName' }).
+                    populate({ path: 'rejected', model: 'User', select: 'userName' }).
+                    exec()
+
+            if (targetApptPopulated === null) return null
+
+            let users = {}
+            users.invited = []
+            users.accepted = []
+            users.rejected = []
+
+            targetApptPopulated.accepted.forEach((element) => {
+                if (element.member.userName !== null)
+                    users.accepted.push(element.member.userName)
+            })
+
+            targetApptPopulated.invited.forEach((element) => {
+                if (element.userName !== null)
+                    users.invited.push(element.userName)
+            })
+            if (users.invited.length > 0 && !!(!users.invited[users.invited.length - 1])) {
+                users.invited.splice(users.invited.length - 1, 1)
+            }
+
+            targetApptPopulated.rejected.forEach((element) => {
+                if (element.userName !== null)
+                    users.rejected.push(element.userName)
+            })
+
+            return users
+        }
+        catch (error) {
+            console.log(error)
+            throw new Error("Error on user population")
+        }
+    }
+
+    /**
+     * Gets appt from Identifier
+     * @param {MongoID} apptIdentifier 
+     *
+     * @return {Object}
+     */
+    static async retrieveAppt(apptIdentifier) {
+        try {
+            const targetApptPopulated = await appt.
+                findOne({ identifier: apptIdentifier }).
+                populate('owner', 'userName').
+                populate({ path: 'accepted.member', model: 'User', select: 'userName' }).
+                populate({ path: 'invited', model: 'User', select: 'userName' }).
+                populate({ path: 'rejected', model: 'User', select: 'userName' }).
+                exec()
+            if (targetApptPopulated === null) return null
+
+            let apptInformation = {}
+            apptInformation.name = targetApptPopulated.name
+            apptInformation.owner = targetApptPopulated.owner.userName
+            apptInformation.startTime = targetApptPopulated.startTime
+            apptInformation.endTime = targetApptPopulated.endTime
+            apptInformation.identifier = targetApptPopulated.identifier
+            apptInformation.destination = targetApptPopulated.destination.coordinates
+            apptInformation.members = await this.getApptUsers(apptIdentifier)
+
+            return apptInformation
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on user population")
+        }
+    }
+
+
+    /**
+     * Deletes specified appt from database and notifies guests of the appts that appt
+     * was deleted.
+     * 
+     * @param {MongoID} apptIdentifier 
+     * @param {userId} userID 
+     */
+    static async deleteAppt(apptIdentifier, userID) {
+        try {
+            const apptPromise = appt.findOneAndRemove({ identifier: apptIdentifier, owner: userID })
+            const targetAppt = await apptPromise
+
+            const ownerId = targetAppt.owner
+            const ownerObj = await user.findById(ownerId)
+            const result = await user.findByIdAndUpdate(ownerId, { $pull: { ownedAppts: { _id: targetAppt._id } } })
+
+            const acceptedList = targetAppt.accepted
+            console.log(acceptedList.length)
+            console.log(acceptedList)
+            for (let i = 0; i < acceptedList.length; i++) {
+                const usersId = acceptedList[i]
+                const userPromise = user.findById(usersId)
+                const targetUser = await userPromise
+
+                let newMessage = {}
+                const msg = "The appt " + targetAppt.name + " has been deleted."
+                newMessage.message = msg
+                newMessage.apptIdentifier = apptIdentifier
+                targetUser.messages.push(newMessage)
+                const userSavePromise = targetUser.save()
+                await userSavePromise
+                await user.findByIdAndUpdate(usersId, { $pull: { participantAppts: { _id: targetAppt._id } } })
+            }
+
+            const invitedList = targetAppt.invited
+            for (let i = 0; i < invitedList.length; i++) {
+                const usersId = invitedList[i]
+                const userPromise = user.findById(usersId)
+                const targetUser = await userPromise
+
+                let newMessage = {}
+                const msg = "The appt " + targetAppt.name + " has been deleted."
+                newMessage.message = msg
+                newMessage.apptIdentifier = apptIdentifier
+                targetUser.messages.push(newMessage)
+                const userSavePromise = targetUser.save()
+                await userSavePromise
+                await user.findByIdAndUpdate(usersId, { $pull: { invitedAppts: { _id: targetAppt._id } } })
+            }
+
+            appt.remove({ _id: targetAppt._id })
+        }
+        catch (error) {
+            console.log(error)
+            throw new Error("Error on wtm deletion")
+        }
+    }
+
+    // /**
+    //  * Invites a user to an appt
+    //  * @param {MongoID} ApptIdentifier 
+    //  * @param {userId} userID
+    //  * @param {username} targetUsername
+    //  * @return {boolean} valid invite
+    //  */
+    // static async inviteApptUser(apptIdentifier, userID, targetUserName) {
+    //     try {
+    //         const apptPromise = appt.findOne({ identifier: apptIdentifier })
+    //         const userPromise = user.findOne({ userName: targetUserName })
+    //         const targetAppt = await apptPromise
+    //         let targetUser = await userPromise
+    //         if (targetAppt === null) {
+    //             console.log("No such Appt")
+    //             return null
+    //         }
+    //         else if (targetAppt.owner._id !== userID) {
+    //             console.log("Only owner can invite")
+    //             return null
+    //         }
+    //         else if (targetUser === null) {
+    //             console.log("No such user")
+    //             return null
+    //         }
+    //         else if (targetUser._id == userID) {
+    //             console.log("Owner is trying to invite him/herself")
+    //             return null
+    //         }
+    //         else {
+    //             const invitedIndex = targetAppt.invited.findIndex((element) => {
+    //                 return element === targetUser._id
+    //             })
+    //             if (invitedIndex !== -1) {
+    //                 console.log("inviteUser: target user already invited")
+    //                 return false
+    //             }
+
+    //             const acceptedIndex = targetAppt.accepted.findIndex((element) => {
+    //                 return element === targetUser._id
+    //             })
+
+    //             if (acceptedIndex !== -1) {
+    //                 console.log("inviteUser: target user already accepted")
+    //                 return false
+    //             }
+    //             const rejectedIndex = targetAppt.rejected.findIndex((element) => {
+    //                 return element === targetUser._id
+    //             })
+
+    //             if (rejectedIndex !== -1) {
+    //                 console.log("inviteUser: target user rejected invitation...reinviting.")
+    //                 targetAppt.rejected.splice(rejectedIndex, 1)
+    //             }
+    //             targetAppt.invited.push(targetUser._id)
+    //             targetUser.invitedAppts.push(targetAppt._id)
+
+    //             let newMessage = {}
+    //             const msg = "You have been invited to " + targetAppt.name + ". Click to accept/decline"
+    //             newMessage.message = msg
+    //             newMessage.apptIdentifier = apptIdentifier
+    //             targetUser.messages.push(newMessage)
+
+    //             const targetPromise = targetAppt.save()
+    //             const userSavePromise = targetUser.save()
+    //             const targetPromiseResult = await targetPromise
+    //             const userSavePromiseResult = await userSavePromise
+
+    //             return true
+    //         }
+    //     } catch (error) {
+    //     }
+    // }
+
+
 }
 
 module.exports = DBDriver

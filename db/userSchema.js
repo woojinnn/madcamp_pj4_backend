@@ -3,6 +3,7 @@ const Schema = mongoose.Schema
 mongoose.Promise = global.Promise
 
 let userSchema = new Schema({
+    // Auth
     userEmail: {
         type: String,
         unique: true
@@ -11,8 +12,39 @@ let userSchema = new Schema({
         type: String,
         unique: true
     },
-    password: String,
+    password: {
+        type: String,
+        unique: true
+    },
 
+    // Appt
+    departure: {
+        type: {
+            type: String,
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+        }
+    },
+    ownedAppts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'appt',
+        default: []
+    }],
+    participantAppts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'appt',
+        default: []
+    }],
+    invitedAppts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'appt',
+        default: []
+    }],
+
+
+    // WTM
     ownedWTMs: [{
         type: Schema.Types.ObjectId,
         ref: 'wtm',
