@@ -95,6 +95,72 @@ module.exports = function (passport) {
         }
     })
 
+    // Update user departure
+    router.post('/departure', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+            const departure = req.body.departure;
+
+            let userID
+            try {
+                const decode = JWT.verify(token, secret)
+                const id = decode.id
+                if (id === undefined) throw new Error("NO ID")
+                userID = id
+            } catch (error) {
+                res.status(400)
+                res.json({ error: "improperly formatted token" })
+            }
+
+
+            const updateDeparturePromise = DBDriver.updateDeparture(userID, departure)
+            const updateDepartureResult = await updateDeparturePromise
+
+            if (updateDepartureResult === null) {
+                res.json({ error: "Did not successfully update departure" })
+            }
+            else {
+                res.json({result: updateDepartureResult})
+            }
+        } catch (error) {
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Get user departure
+    router.get('/departure', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+
+            let userID
+            try {
+                const decode = JWT.verify(token, secret)
+                const id = decode.id
+                if (id === undefined) throw new Error("NO ID")
+                userID = id
+            } catch (error) {
+                res.status(400)
+                res.json({ error: "improperly formatted token" })
+            }
+
+
+            const getDeparturePromise = DBDriver.getUserDeparture(userID)
+            const getDepartureResult = await getDeparturePromise
+
+            if (getDepartureResult === null) {
+                res.json({ error: "Did not successfully update departure" })
+            }
+            else {
+                res.json({coordinates: getDepartureResult})
+            }
+        } catch (error) {
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
+
 
     // Gets a user's admin wtms
     router.get('/owner-wtms', passport.authenticate('jwt', { session: false }), async (req, res) => {
@@ -118,6 +184,39 @@ module.exports = function (passport) {
 
             const userId = getIdFromToken(token)
             const resObj = await DBDriver.getGuestWTMs(userId)
+
+            res.status(200)
+            res.json(resObj)
+        } catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Gets a user's admin appts
+    router.get('/owner-appts', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+
+            const userId = getIdFromToken(token)
+            const resObj = await DBDriver.getOwnerAppts(userId)
+            res.status(200)
+            res.json({ appts: resObj })
+        } catch (error) {
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
+
+    // Get guest appts
+    router.get('/guest-appts', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+
+            const userId = getIdFromToken(token)
+            const resObj = await DBDriver.getGuestAppts(userId)
 
             res.status(200)
             res.json(resObj)

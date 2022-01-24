@@ -612,28 +612,26 @@ class DBDriver {
                 }
                 else {
                     // Find the index of the user within the rejected users of the wtm.
-                    const wtmRejectedIndex = targetWTM.rejected.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    const wtmRejectedIndex = targetWTM.rejected.indexOf(targetUser._id)
                     // Return if user is already in the rejected guest list
-                    if (wtmRejectedIndex !== -1) {
+                    if (wtmRejectedIndex != -1) {
                         console.log("addWTMGuest: guest already rejected the wtm")
                         return null
                     }
 
                     // Find the index of the the user within the accepted users of the wtm. 
-                    const wtmAcceptedIndex = targetWTM.accepted.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    const wtmAcceptedIndex = targetWTM.accepted.indexOf(targetUser._id)
                     // Return if user is already in the accepted guest list
-                    if (wtmAcceptedIndex !== -1) {
+                    if (wtmAcceptedIndex != -1) {
                         console.log("addWTMGuest: guest has already accepted invitation")
                         return null
                     }
 
-                    const wtmInvitedIndex = targetWTM.invited.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    console.log(userID)
+                    console.log(targetUser._id)
+                    console.log(targetUser.userName)
+                    console.log(targetWTM.invited)
+                    const wtmInvitedIndex = targetWTM.invited.indexOf(targetUser._id)
                     console.log("addWTMGuest: wtm invited index = " + wtmInvitedIndex)
                     if (wtmInvitedIndex === -1) {
                         console.log("User has not invited. Invite before you add")
@@ -737,6 +735,27 @@ class DBDriver {
         }
     }
 
+    static async getUserDeparture(userID) {
+        try {
+            const userPromise = user.findById(userID)
+            const targetUser = await userPromise
+            if (targetUser === null) {
+                console.log("No such user")
+                return null
+            }
+            else {
+                if (targetUser.departure === undefined) {
+                    return null
+                }
+
+                return targetUser.departure.coordinates
+            }
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
     /**
      * Clears a user's messages
      * @param {userId} userID
@@ -764,6 +783,25 @@ class DBDriver {
             throw new Error("Error on getUserMessages inside DBDriver")
         }
     }
+
+    /**
+     * Gets a user's owner wtms
+     * @param {targetId} userID
+     * @return {retArray} array of owner wtms IDs
+     */
+    static async updateDeparture(userID, departure) {
+        try {
+            const result = await user.findById(userID)
+            result.departure.coordinates = departure
+            const userSavePromise = result.save()
+            await userSavePromise
+            return true
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on get owner wtms")
+        }
+    }
+
 
     /**
      * Gets a user's owner wtms
@@ -1414,6 +1452,71 @@ class DBDriver {
         }
     }
 
+
+    /**
+     * Gets a user's owner appts
+     * @param {targetId} userID
+     * @return {retArray} array of owner appts IDs
+     */
+    static async getOwnerAppts(targetId) {
+        try {
+            let targetAppts = await appt.find({ owner: targetId })
+            let retArray = []
+            if (targetAppts !== null) {
+                targetAppts.forEach((element) => {
+                    let targetObj = {}
+                    targetObj.apptName = element.name
+                    targetObj.identifier = element.identifier
+                    retArray.push(targetObj)
+                })
+            }
+
+            return retArray
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on get owner appts")
+        }
+    }
+
+    /**
+     * Gets a user's guest appts
+     * @param {targetId} userID
+     * @return {Object}
+     */
+    static async getGuestAppts(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('invitedAppts').
+                populate('participantAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let invitedArr = []
+            let acceptedArr = []
+            targetUser.invitedAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                invitedArr.push(targetElement)
+            })
+
+            targetUser.participantAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                acceptedArr.push(targetElement)
+            })
+
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
 
 }
 

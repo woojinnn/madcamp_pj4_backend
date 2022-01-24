@@ -60,5 +60,5 @@ let apptSchema = new Schema({
     }]
 })
 
-const appt = mongoose.model('Appt', apptSchema)
+const appt = mongoose.model('appt', apptSchema)
 module.exports = appt

@@ -103,7 +103,7 @@ module.exports = function (passport) {
                 apptName: result.name,
                 apptStartTime: result.apptStartTime,
                 apptEndTime: result.apptEndTime,
-                apptDest: result.destination,
+                coordinates: result.destination.coordinates,
                 apptIdentifier: result.identifier
             })
         } catch (error) {

@@ -2,11 +2,14 @@
 const express = require("express")
 const bodyParser = require("body-parser")
 const helmet = require("helmet")
+const http = require('http')
 // const JWT = require("jsonwebtoken")
 // const passportJWT = require("passport-jwt")
 // const nodemailer = require("nodemailer")
-
+const socketio = require('socket.io')
 const app = express()
+const server = http.createServer(app)
+const io = socketio(server)
 
 // CONFIGURE: PORT, SECRET
 const port = process.env.PORT || 80
@@ -31,70 +34,58 @@ app.use("/wtm", wtmRouter)
 app.use("/user", userRouter)
 app.use("/appt", apptRouter)
 
+
+io.on('connection', socket => {
+    // TODO
+    // socket.on('joinRoom', ())
+
+
+
+    socket.on('disconnect', () => {
+    })
+})
+
+
+
+
 // RUN SERVER
-const server = app.listen(port, function () {
+server.listen(port, function () {
     console.log("Express server has started on port " + port)
 });
 
+// fireabse
+// pushAlarm
+const admin = require("firebase-admin")
+let serviceAccount = require("./firebase-admin.json")
+admin.initializeApp(
+    {
+        credential: admin.credential.cert(serviceAccount),
+    }
+)
 
+app.get("/push", async function (req, res) {
+    //디바이스의 토큰 값
+    let deviceToken = `csf7y0obSNi7jbaETHkQwe:APA91bEapAXoQ8rEdc2bEGPdsIdocZjmjH6CQXnyRNBdBBVpTerhAbw3rHl6TB-r45OtD-M-ApetxRt_UVA5eTWGbVMlz5DXryo2L5bPKSeucFjVi1Oio6sW-bBIEFj6giQMANjeWDF6`
 
-// // fireabse
-// // pushAlarm
-// const admin = require("firebase-admin")
-// let serviceAccount = require("./firebase-admin.json")
-// admin.initializeApp(
-//     {
-//         credential: admin.credential.cert(serviceAccount),
-//     }
-// )
-
-
-// const pushAlarm = async function (req, res) {
-//     //디바이스의 토큰 값
-//     let deviceToken = `dJwXjQv8S62Il2g-hBUT67:APA91bGI521s_mxPO0ZVzUwh4nPYqOQ10B77Viw6jnpA-2pAo8fvauXPCI8D3ejPWrnlgIiDOM44diubrQIfJkEMs8rxBlJrIbfAoXCCzy6WVxXxupxt0lGDn8uld_M9j8twZE52SVbV`
-
-//     let message = {
-//         notification: {
-//             title: '테스트 발송💛',
-//             body: '망고플레이트 앱 확인해보세요!💚',
-//         },
-//         token: deviceToken,
-//     }
-//     admin
-//         .messaging()
-//         .send(message)
-//         .then(function (response) {
-//             console.log('Successfully sent message: : ', response)
-//             return res.status(200).json({ success: true })
-//         })
-//         .catch(function (err) {
-//             console.log('Error Sending message!!! : ', err)
-//             return res.status(400).json({ success: false })
-//         });
-// }
-// app.get("/push", async function (req, res) {
-//     //디바이스의 토큰 값
-//     let deviceToken = `dJwXjQv8S62Il2g-hBUT67:APA91bGI521s_mxPO0ZVzUwh4nPYqOQ10B77Viw6jnpA-2pAo8fvauXPCI8D3ejPWrnlgIiDOM44diubrQIfJkEMs8rxBlJrIbfAoXCCzy6WVxXxupxt0lGDn8uld_M9j8twZE52SVbV`
-
-//     let message = {
-//         notification: {
-//             title: '테스트 발송💛',
-//             body: '망고플레이트 앱 확인해보세요!💚',
-//         },
-//         token: deviceToken,
-//     }
-//     admin
-//         .messaging()
-//         .send(message)
-//         .then(function (response) {
-//             console.log('Successfully sent message: : ', response)
-//             return res.status(200).json({ success: true })
-//         })
-//         .catch(function (err) {
-//             console.log('Error Sending message!!! : ', err)
-//             return res.status(400).json({ success: false })
-//         });
-// })
+    let message = {
+        notification: {
+            title: '테스트 발송💛',
+            body: '망고플레이트 앱 확인해보세요!💚',
+        },
+        token: deviceToken,
+    }
+    admin
+        .messaging()
+        .send(message)
+        .then(function (response) {
+            console.log('Successfully sent message: : ', response)
+            return res.status(200).json({ success: true })
+        })
+        .catch(function (err) {
+            console.log('Error Sending message!!! : ', err)
+            return res.status(400).json({ success: false })
+        });
+})
 
 
 // const map = require('./utils/google_map')
