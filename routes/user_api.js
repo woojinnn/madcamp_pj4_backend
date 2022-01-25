@@ -28,6 +28,21 @@ module.exports = function (passport) {
     const express = require("express")
     const router = express.Router()
 
+    // Get guest appts
+    router.get('/allusers', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+            const resObj = await DBDriver.getAllUsers()
+
+            res.status(200)
+            res.json({ infos: resObj })
+        } catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
     // Gets messages in user's inbox and sends back as string
     router.get('/get-msgs', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
@@ -120,7 +135,7 @@ module.exports = function (passport) {
                 res.json({ error: "Did not successfully update departure" })
             }
             else {
-                res.json({result: updateDepartureResult})
+                res.json({ result: updateDepartureResult })
             }
         } catch (error) {
             res.status(500)
@@ -133,7 +148,8 @@ module.exports = function (passport) {
     router.get('/departure', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
             const token = req.header('jwt')
-
+            const username = req.query.username
+            console.log(username)
             let userID
             try {
                 const decode = JWT.verify(token, secret)
@@ -145,15 +161,14 @@ module.exports = function (passport) {
                 res.json({ error: "improperly formatted token" })
             }
 
-
-            const getDeparturePromise = DBDriver.getUserDeparture(userID)
+            const getDeparturePromise = DBDriver.getUserDeparture(username)
             const getDepartureResult = await getDeparturePromise
 
             if (getDepartureResult === null) {
-                res.json({ error: "Did not successfully update departure" })
+                res.json({ error: "no such user" })
             }
             else {
-                res.json({coordinates: getDepartureResult})
+                res.json({ coordinates: getDepartureResult })
             }
         } catch (error) {
             res.status(500)
@@ -217,6 +232,26 @@ module.exports = function (passport) {
 
             const userId = getIdFromToken(token)
             const resObj = await DBDriver.getGuestAppts(userId)
+
+            res.status(200)
+            res.json(resObj)
+        } catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Get guest appts
+    router.get('/appts-date', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+            const date = req.query.date
+
+            const userId = getIdFromToken(token)
+
+            const resObj = await DBDriver.getApptsOfDate(userId, date)
 
             res.status(200)
             res.json(resObj)

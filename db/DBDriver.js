@@ -697,6 +697,46 @@ class DBDriver {
     }
 
     // ** User Activities **
+    static async getAllUsers() {
+        try {
+            const userPromise = user.find()
+            const userArray = await userPromise
+            let info = []
+            userArray.forEach((element) => {
+                info.push({ userName: element.userName, userEmail: element.userEmail })
+            })
+            console.log(info)
+            return info
+            // const targetUser = await userPromise
+            // if (targetUser === null) {
+            //     console.log("No such user")
+            //     return null
+            // }
+            // else {
+            //     if (targetUser.messages === undefined) {
+            //         return null
+            //     }
+
+            //     let userMessages = {}
+            //     userMessages.messages = targetUser.messages
+
+            //     // Clear the messages of the user
+            //     targetUser.messages = []
+            //     const userSavePromise = targetUser.save()
+            //     const saveResult = await userSavePromise
+            //     if (saveResult !== null) {
+            //         return userMessages
+            //     }
+            //     else {
+            //         return null
+            //     }
+            // }
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
     /**
      * Gets user message from inbox
      * @param {userId} userID
@@ -735,9 +775,9 @@ class DBDriver {
         }
     }
 
-    static async getUserDeparture(userID) {
+    static async getUserDeparture(username) {
         try {
-            const userPromise = user.findById(userID)
+            const userPromise = user.findOne({ userName: username })
             const targetUser = await userPromise
             if (targetUser === null) {
                 console.log("No such user")
@@ -1508,6 +1548,64 @@ class DBDriver {
                 acceptedArr.push(targetElement)
             })
 
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+
+    static async getApptsOfDate(userId, date) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('ownedAppts').
+                populate('invitedAppts').
+                populate('participantAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let ownerArr = []
+            let invitedArr = []
+            let acceptedArr = []
+
+            const day = Date.parse(date)
+            const nextDay = Date.parse(date) + 1000 * 3600 * 24
+
+            targetUser.ownedAppts.forEach((element) => {
+                if (element.startTime >= day && element.startTime < nextDay) {
+                    let targetElement = {}
+                    targetElement.identifier = element.identifier
+                    targetElement.name = element.name
+                    ownerArr.push(targetElement)
+                }
+            })
+
+
+            targetUser.invitedAppts.forEach((element) => {
+                if (element.startTime >= day && element.startTime < nextDay) {
+                    let targetElement = {}
+                    targetElement.identifier = element.identifier
+                    targetElement.name = element.name
+                    invitedArr.push(targetElement)
+                }
+            })
+
+            targetUser.participantAppts.forEach((element) => {
+                if (element.startTime >= day && element.startTime < nextDay) {
+
+                    let targetElement = {}
+                    targetElement.identifier = element.identifier
+                    targetElement.name = element.name
+                    acceptedArr.push(targetElement)
+                }
+            })
+
+            retObj.owned = ownerArr
             retObj.invited = invitedArr
             retObj.accepted = acceptedArr
 
