@@ -19,13 +19,7 @@ let userSchema = new Schema({
 
     // Appt
     departure: {
-        type: {
-            type: String,
-            default: 'Point'
-        },
-        coordinates: {
-            type: [Number],
-        }
+        type: String
     },
     ownedAppts: [{
         type: Schema.Types.ObjectId,

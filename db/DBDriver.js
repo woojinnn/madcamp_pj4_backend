@@ -182,9 +182,9 @@ class DBDriver {
         try {
             const targetOwner = await user.findOne({ userName: creatorUserName })
             if (targetOwner === null) return null
-            let targetIdentifier = Math.round(Math.random() * 1000)
+            let targetIdentifier = Math.round(Math.random() * 10000)
             while (await wtm.findOne({ identifier: targetIdentifier }) !== null) {
-                targetIdentifier = Math.round(Math.random() * 1000)
+                targetIdentifier = Math.round(Math.random() * 10000)
             }
 
             let newWTM = new wtm()
@@ -612,28 +612,26 @@ class DBDriver {
                 }
                 else {
                     // Find the index of the user within the rejected users of the wtm.
-                    const wtmRejectedIndex = targetWTM.rejected.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    const wtmRejectedIndex = targetWTM.rejected.indexOf(targetUser._id)
                     // Return if user is already in the rejected guest list
-                    if (wtmRejectedIndex !== -1) {
+                    if (wtmRejectedIndex != -1) {
                         console.log("addWTMGuest: guest already rejected the wtm")
                         return null
                     }
 
                     // Find the index of the the user within the accepted users of the wtm. 
-                    const wtmAcceptedIndex = targetWTM.accepted.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    const wtmAcceptedIndex = targetWTM.accepted.indexOf(targetUser._id)
                     // Return if user is already in the accepted guest list
-                    if (wtmAcceptedIndex !== -1) {
+                    if (wtmAcceptedIndex != -1) {
                         console.log("addWTMGuest: guest has already accepted invitation")
                         return null
                     }
 
-                    const wtmInvitedIndex = targetWTM.invited.findIndex((element) => {
-                        return element === targetUser._id
-                    })
+                    console.log(userID)
+                    console.log(targetUser._id)
+                    console.log(targetUser.userName)
+                    console.log(targetWTM.invited)
+                    const wtmInvitedIndex = targetWTM.invited.indexOf(targetUser._id)
                     console.log("addWTMGuest: wtm invited index = " + wtmInvitedIndex)
                     if (wtmInvitedIndex === -1) {
                         console.log("User has not invited. Invite before you add")
@@ -699,6 +697,46 @@ class DBDriver {
     }
 
     // ** User Activities **
+    static async getAllUsers() {
+        try {
+            const userPromise = user.find()
+            const userArray = await userPromise
+            let info = []
+            userArray.forEach((element) => {
+                info.push({ userName: element.userName, userEmail: element.userEmail })
+            })
+            console.log(info)
+            return info
+            // const targetUser = await userPromise
+            // if (targetUser === null) {
+            //     console.log("No such user")
+            //     return null
+            // }
+            // else {
+            //     if (targetUser.messages === undefined) {
+            //         return null
+            //     }
+
+            //     let userMessages = {}
+            //     userMessages.messages = targetUser.messages
+
+            //     // Clear the messages of the user
+            //     targetUser.messages = []
+            //     const userSavePromise = targetUser.save()
+            //     const saveResult = await userSavePromise
+            //     if (saveResult !== null) {
+            //         return userMessages
+            //     }
+            //     else {
+            //         return null
+            //     }
+            // }
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
     /**
      * Gets user message from inbox
      * @param {userId} userID
@@ -737,6 +775,27 @@ class DBDriver {
         }
     }
 
+    static async getUserDeparture(username) {
+        try {
+            const userPromise = user.findOne({ userName: username })
+            const targetUser = await userPromise
+            if (targetUser === null) {
+                console.log("No such user")
+                return null
+            }
+            else {
+                if (targetUser.departure === undefined) {
+                    return null
+                }
+
+                return targetUser.departure
+            }
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
     /**
      * Clears a user's messages
      * @param {userId} userID
@@ -764,6 +823,25 @@ class DBDriver {
             throw new Error("Error on getUserMessages inside DBDriver")
         }
     }
+
+    /**
+     * Gets a user's owner wtms
+     * @param {targetId} userID
+     * @return {retArray} array of owner wtms IDs
+     */
+    static async updateDeparture(userID, departure) {
+        try {
+            const result = await user.findById(userID)
+            result.departure = departure
+            const userSavePromise = result.save()
+            await userSavePromise
+            return true
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on get owner wtms")
+        }
+    }
+
 
     /**
      * Gets a user's owner wtms
@@ -986,32 +1064,68 @@ class DBDriver {
      * Create new Appointment
      * @param {String} apptName - name of appointment
      * @param {Date} apptTime - Date and Time of appointment
-     * @param {Point} apptDest - destination of appointment
+     * @param {String} apptDest - destination of appointment
      * @return {Promise<Boolean>}
      */
     static async createAppt(apptName, apptStartTime, apptEndTime, apptDest, creatorID) {
         try {
             const creator = await user.findById(creatorID)
 
-            let targetIdentifier = Math.round(Math.random() * 1000)
+            let targetIdentifier = Math.round(Math.random() * 10000)
             while (await appt.findOne({ identifier: targetIdentifier }) !== null) {
-                targetIdentifier = Math.round(Math.random() * 1000)
+                targetIdentifier = Math.round(Math.random() * 10000)
             }
 
             let newAppt = new appt()
             newAppt.name = apptName
             newAppt.startTime = apptStartTime
             newAppt.endTime = apptEndTime
-            newAppt.destination = {
-                type: 'Point',
-                coordinates: apptDest
-            }
+            newAppt.destination = apptDest
             newAppt.identifier = targetIdentifier
             newAppt.owner = creatorID
 
             const saveAppt = await newAppt.save()
             creator.ownedAppts.push(newAppt._id)
             const savedOwnerPromise = await creator.save()
+
+            return saveAppt
+        }
+        catch (error) {
+            console.log(error)
+            throw new Error("Error on Appointment Creation")
+        }
+    }
+
+
+
+    /**
+     * Create new Appointment
+     * @param {String} apptName - name of appointment
+     * @param {Date} apptTime - Date and Time of appointment
+     * @param {String} apptDest - destination of appointment
+     * @return {Promise<Boolean>}
+     */
+    static async modifyAppt(apptName, apptStartTime, apptEndTime, apptDest, userId, targetIdentifier) {
+        try {
+            const usr = await user.findById(userId)
+            const prevAppt = await appt.findOne({ identifier: targetIdentifier })
+
+            if (prevAppt.owner != userId) {
+                console.log("only owner can modify appt")
+                return null
+            }
+
+            const saveAppt = await appt.updateOne(
+                { identifier: targetIdentifier },
+                {
+                    $set: {
+                        name: apptName,
+                        startTime: apptStartTime,
+                        endTime: apptEndTime,
+                        destination: apptDest,
+                    }
+                }
+            )
 
             return saveAppt
         }
@@ -1090,7 +1204,7 @@ class DBDriver {
             apptInformation.startTime = targetApptPopulated.startTime
             apptInformation.endTime = targetApptPopulated.endTime
             apptInformation.identifier = targetApptPopulated.identifier
-            apptInformation.destination = targetApptPopulated.destination.coordinates
+            apptInformation.destination = targetApptPopulated.destination
             apptInformation.members = await this.getApptUsers(apptIdentifier)
 
             return apptInformation
@@ -1414,6 +1528,277 @@ class DBDriver {
         }
     }
 
+
+    /**
+     * Gets a user's owner appts
+     * @param {targetId} userID
+     * @return {retArray} array of owner appts IDs
+     */
+    static async getOwnerAppts(targetId) {
+        try {
+            let targetAppts = await appt.find({ owner: targetId })
+            let retArray = []
+            if (targetAppts !== null) {
+                targetAppts.forEach((element) => {
+                    let targetObj = {}
+                    targetObj.apptName = element.name
+                    targetObj.identifier = element.identifier
+                    targetObj.place = element.destination
+                    targetObj.time = element.startTime
+                    retArray.push(targetObj)
+                })
+            }
+
+            return retArray
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on get owner appts")
+        }
+    }
+
+    /**
+     * Gets a user's guest appts
+     * @param {targetId} userID
+     * @return {Object}
+     */
+    static async getGuestAppts(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('invitedAppts').
+                populate('participantAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let invitedArr = []
+            let acceptedArr = []
+            targetUser.invitedAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetObj.place = element.destination
+                targetObj.time = element.startTime
+                invitedArr.push(targetElement)
+            })
+
+            targetUser.participantAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetObj.place = element.destination
+                targetObj.time = element.startTime
+                acceptedArr.push(targetElement)
+            })
+
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+    static async getUserInvitedAppts(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('invitedAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let invitedArr = []
+            targetUser.invitedAppts.forEach((element) => {
+                invitedArr.push(element.identifier)
+            })
+
+            return invitedArr
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+
+    static async getUserAppts(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('ownedAppts').
+                populate('invitedAppts').
+                populate('participantAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let ownedArray = []
+            let invitedArr = []
+            let acceptedArr = []
+            targetUser.invitedAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.place = element.destination
+                targetElement.time = element.startTime
+                invitedArr.push(targetElement)
+            })
+
+            targetUser.participantAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.place = element.destination
+                targetElement.time = element.startTime
+                acceptedArr.push(targetElement)
+            })
+
+            targetUser.ownedAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.place = element.destination
+                targetElement.time = element.startTime
+                ownedArray.push(targetElement)
+            })
+
+            retObj.owned = ownedArray
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+
+    static async getUserWTMs(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('ownedWTMs').
+                populate('invitedWTMs').
+                populate('participantWTMs').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let ownedArray = []
+            let invitedArr = []
+            let acceptedArr = []
+            targetUser.invitedWTMs.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                let dates = ""
+                element.dateRange.forEach((elem) => {
+                    dates += elem.toString()
+                })
+                targetElement.dates = element.dates
+                targetElement.startTime = element.startTime
+                targetElement.endTime = element.endTime
+                invitedArr.push(targetElement)
+            })
+
+            targetUser.participantWTMs.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.dates = element.dateRange
+                targetElement.startTime = element.startTime
+                targetElement.endTime = element.endTime
+                acceptedArr.push(targetElement)
+            })
+
+            targetUser.ownedWTMs.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                //                targetElement.dates = element.dateRange
+                let dates = ""
+                element.dateRange.forEach((elem) => {
+                    dates += elem.toISOString().split('T')[0] + ", "
+                })
+                targetElement.dates = dates
+                targetElement.startTime = element.startTime
+                targetElement.endTime = element.endTime
+                ownedArray.push(targetElement)
+            })
+
+            retObj.owned = ownedArray
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+
+    static async getApptsOfDate(userId, date) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('ownedAppts').
+                populate('invitedAppts').
+                populate('participantAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let ownerArr = []
+            let invitedArr = []
+            let acceptedArr = []
+
+            const day = Date.parse(date)
+            const nextDay = Date.parse(date) + 1000 * 3600 * 24
+
+            targetUser.ownedAppts.forEach((element) => {
+                if (element.startTime >= day && element.startTime < nextDay) {
+                    let targetElement = {}
+                    targetElement.identifier = element.identifier
+                    targetElement.name = element.name
+                    targetElement.place = element.destination
+                    targetElement.time = element.startTime
+                    ownerArr.push(targetElement)
+                }
+            })
+
+
+            targetUser.invitedAppts.forEach((element) => {
+                if (element.startTime >= day && element.startTime < nextDay) {
+                    let targetElement = {}
+                    targetElement.identifier = element.identifier
+                    targetElement.name = element.name
+                    targetElement.place = element.destination
+                    targetElement.time = element.startTime
+                    invitedArr.push(targetElement)
+                }
+            })
+
+            targetUser.participantAppts.forEach((element) => {
+                if (element.startTime >= day && element.startTime < nextDay) {
+
+                    let targetElement = {}
+                    targetElement.identifier = element.identifier
+                    targetElement.name = element.name
+                    targetElement.place = element.destination
+                    targetElement.time = element.startTime
+
+                    acceptedArr.push(targetElement)
+                }
+            })
+
+            retObj.owned = ownerArr
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
 
 }
 
