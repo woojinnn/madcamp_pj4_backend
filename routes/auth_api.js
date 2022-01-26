@@ -118,8 +118,18 @@ module.exports = function (passport) {
             if (id) {
                 const payload = { id: id }
                 const token = JWT.sign(payload, jwtConfigOptions.secretOrKey)
+                const user = await DBDriver.getUserFromId(id)
+                let dept
+                if (user.departure === null || user.departure === undefined) {
+                    dept = ""
+                } else dept = user.departure
                 res.status(200)
-                res.json({ message: "ok", token: token })
+                res.json({
+                    message: "ok",
+                    token: token,
+                    name: user.userName,
+                    departure: dept
+                })
             } else {
                 res.status(200)
                 res.send('no user found')

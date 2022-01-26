@@ -41,23 +41,58 @@ module.exports = function (passport) {
     const express = require("express")
     const router = express.Router()
 
+    router.get('/get-coordinate', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const address = req.query.address
+
+            const latlng = await map.getLatLong(address)
+            if (latlng === undefined || latlng === null) {
+                res.status(200)
+                return res.json({ error: "cannot find coordinates" })
+            }
+
+            const lat = latlng.lat
+            const lng = latlng.lng
+            res.status(200)
+
+            return res.json({
+                latitude: lat,
+                longitutde: lng
+            })
+        }
+        catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
     router.post('/set-alarm', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
-            const location = req.body.location
+            const departure = req.body.departure
+            const destination = req.body.destination
             const deviceToken = req.body.deviceToken
-            const time = req.body.time
+            const time = req.body.time + ":00.000+09:00"    // YYYY-MM-DDTHH:MM:SS.SSS+09:00 format
             console.log(time)
 
-            if (location === undefined || deviceToken === undefined || time === undefined) {
+            if (departure === undefined || destination === undefined
+                || deviceToken === undefined || time === undefined) {
                 res.status(400)
                 res.json({ result: false })
             }
             const date = new Date(time)
+            const deptLatLng = await map.getLatLong(departure)
+            const deptLat = deptLatLng.lat
+            const deptLng = deptLatLng.lng
 
-            const route = await map.getRoute(location[0], location[1], location[2], location[3])
+            const destLatLng = await map.getLatLong(destination)
+            const destLat = destLatLng.lat
+            const destLng = destLatLng.lng
+
+            const route = await map.getRoute(deptLat, deptLng, destLat, destLng)
             const seconds = route.rows[0].elements[0].duration.value
             const departureTime = new Date(date - seconds * 1000)
-            
+
             console.log(date)
             console.log(departureTime)
 
@@ -80,7 +115,8 @@ module.exports = function (passport) {
             //             console.log('Error Sending message!!! : ', err)
             //         })
             // })
-            return res.status(200).json({result: true, time: departureTime.toString()})
+            // return res.status(200).json({result: true, time: departureTime.toString()})
+            return res.status(200)
         }
         catch (error) {
             res.status(500)

@@ -182,9 +182,9 @@ class DBDriver {
         try {
             const targetOwner = await user.findOne({ userName: creatorUserName })
             if (targetOwner === null) return null
-            let targetIdentifier = Math.round(Math.random() * 1000)
+            let targetIdentifier = Math.round(Math.random() * 10000)
             while (await wtm.findOne({ identifier: targetIdentifier }) !== null) {
-                targetIdentifier = Math.round(Math.random() * 1000)
+                targetIdentifier = Math.round(Math.random() * 10000)
             }
 
             let newWTM = new wtm()
@@ -788,7 +788,7 @@ class DBDriver {
                     return null
                 }
 
-                return targetUser.departure.coordinates
+                return targetUser.departure
             }
         } catch (error) {
             console.log(error)
@@ -832,7 +832,7 @@ class DBDriver {
     static async updateDeparture(userID, departure) {
         try {
             const result = await user.findById(userID)
-            result.departure.coordinates = departure
+            result.departure = departure
             const userSavePromise = result.save()
             await userSavePromise
             return true
@@ -1064,32 +1064,68 @@ class DBDriver {
      * Create new Appointment
      * @param {String} apptName - name of appointment
      * @param {Date} apptTime - Date and Time of appointment
-     * @param {Point} apptDest - destination of appointment
+     * @param {String} apptDest - destination of appointment
      * @return {Promise<Boolean>}
      */
     static async createAppt(apptName, apptStartTime, apptEndTime, apptDest, creatorID) {
         try {
             const creator = await user.findById(creatorID)
 
-            let targetIdentifier = Math.round(Math.random() * 1000)
+            let targetIdentifier = Math.round(Math.random() * 10000)
             while (await appt.findOne({ identifier: targetIdentifier }) !== null) {
-                targetIdentifier = Math.round(Math.random() * 1000)
+                targetIdentifier = Math.round(Math.random() * 10000)
             }
 
             let newAppt = new appt()
             newAppt.name = apptName
             newAppt.startTime = apptStartTime
             newAppt.endTime = apptEndTime
-            newAppt.destination = {
-                type: 'Point',
-                coordinates: apptDest
-            }
+            newAppt.destination = apptDest
             newAppt.identifier = targetIdentifier
             newAppt.owner = creatorID
 
             const saveAppt = await newAppt.save()
             creator.ownedAppts.push(newAppt._id)
             const savedOwnerPromise = await creator.save()
+
+            return saveAppt
+        }
+        catch (error) {
+            console.log(error)
+            throw new Error("Error on Appointment Creation")
+        }
+    }
+
+
+
+    /**
+     * Create new Appointment
+     * @param {String} apptName - name of appointment
+     * @param {Date} apptTime - Date and Time of appointment
+     * @param {String} apptDest - destination of appointment
+     * @return {Promise<Boolean>}
+     */
+    static async modifyAppt(apptName, apptStartTime, apptEndTime, apptDest, userId, targetIdentifier) {
+        try {
+            const usr = await user.findById(userId)
+            const prevAppt = await appt.findOne({ identifier: targetIdentifier })
+
+            if (prevAppt.owner != userId) {
+                console.log("only owner can modify appt")
+                return null
+            }
+
+            const saveAppt = await appt.updateOne(
+                { identifier: targetIdentifier },
+                {
+                    $set: {
+                        name: apptName,
+                        startTime: apptStartTime,
+                        endTime: apptEndTime,
+                        destination: apptDest,
+                    }
+                }
+            )
 
             return saveAppt
         }
@@ -1168,7 +1204,7 @@ class DBDriver {
             apptInformation.startTime = targetApptPopulated.startTime
             apptInformation.endTime = targetApptPopulated.endTime
             apptInformation.identifier = targetApptPopulated.identifier
-            apptInformation.destination = targetApptPopulated.destination.coordinates
+            apptInformation.destination = targetApptPopulated.destination
             apptInformation.members = await this.getApptUsers(apptIdentifier)
 
             return apptInformation
@@ -1507,6 +1543,8 @@ class DBDriver {
                     let targetObj = {}
                     targetObj.apptName = element.name
                     targetObj.identifier = element.identifier
+                    targetObj.place = element.destination
+                    targetObj.time = element.startTime
                     retArray.push(targetObj)
                 })
             }
@@ -1538,6 +1576,8 @@ class DBDriver {
                 let targetElement = {}
                 targetElement.identifier = element.identifier
                 targetElement.name = element.name
+                targetObj.place = element.destination
+                targetObj.time = element.startTime
                 invitedArr.push(targetElement)
             })
 
@@ -1545,9 +1585,146 @@ class DBDriver {
                 let targetElement = {}
                 targetElement.identifier = element.identifier
                 targetElement.name = element.name
+                targetObj.place = element.destination
+                targetObj.time = element.startTime
                 acceptedArr.push(targetElement)
             })
 
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+    static async getUserInvitedAppts(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('invitedAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let invitedArr = []
+            targetUser.invitedAppts.forEach((element) => {
+                invitedArr.push(element.identifier)
+            })
+
+            return invitedArr
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+
+    static async getUserAppts(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('ownedAppts').
+                populate('invitedAppts').
+                populate('participantAppts').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let ownedArray = []
+            let invitedArr = []
+            let acceptedArr = []
+            targetUser.invitedAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.place = element.destination
+                targetElement.time = element.startTime
+                invitedArr.push(targetElement)
+            })
+
+            targetUser.participantAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.place = element.destination
+                targetElement.time = element.startTime
+                acceptedArr.push(targetElement)
+            })
+
+            targetUser.ownedAppts.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.place = element.destination
+                targetElement.time = element.startTime
+                ownedArray.push(targetElement)
+            })
+
+            retObj.owned = ownedArray
+            retObj.invited = invitedArr
+            retObj.accepted = acceptedArr
+
+            return retObj
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error on getUserMessages inside DBDriver")
+        }
+    }
+
+
+    static async getUserWTMs(userId) {
+        try {
+            const userPromise = user.findById(userId).
+                populate('ownedWTMs').
+                populate('invitedWTMs').
+                populate('participantWTMs').
+                exec()
+            const targetUser = await userPromise
+            if (targetUser === null || targetUser === undefined) throw new Error('invalid user')
+            let retObj = {}
+            let ownedArray = []
+            let invitedArr = []
+            let acceptedArr = []
+            targetUser.invitedWTMs.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                let dates = ""
+                element.dateRange.forEach((elem) => {
+                    dates += elem.toString()
+                })
+                targetElement.dates = element.dates
+                targetElement.startTime = element.startTime
+                targetElement.endTime = element.endTime
+                invitedArr.push(targetElement)
+            })
+
+            targetUser.participantWTMs.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                targetElement.dates = element.dateRange
+                targetElement.startTime = element.startTime
+                targetElement.endTime = element.endTime
+                acceptedArr.push(targetElement)
+            })
+
+            targetUser.ownedWTMs.forEach((element) => {
+                let targetElement = {}
+                targetElement.identifier = element.identifier
+                targetElement.name = element.name
+                //                targetElement.dates = element.dateRange
+                let dates = ""
+                element.dateRange.forEach((elem) => {
+                    dates += elem.toISOString().split('T')[0] + ", "
+                })
+                targetElement.dates = dates
+                targetElement.startTime = element.startTime
+                targetElement.endTime = element.endTime
+                ownedArray.push(targetElement)
+            })
+
+            retObj.owned = ownedArray
             retObj.invited = invitedArr
             retObj.accepted = acceptedArr
 
@@ -1581,6 +1758,8 @@ class DBDriver {
                     let targetElement = {}
                     targetElement.identifier = element.identifier
                     targetElement.name = element.name
+                    targetElement.place = element.destination
+                    targetElement.time = element.startTime
                     ownerArr.push(targetElement)
                 }
             })
@@ -1591,6 +1770,8 @@ class DBDriver {
                     let targetElement = {}
                     targetElement.identifier = element.identifier
                     targetElement.name = element.name
+                    targetElement.place = element.destination
+                    targetElement.time = element.startTime
                     invitedArr.push(targetElement)
                 }
             })
@@ -1601,6 +1782,9 @@ class DBDriver {
                     let targetElement = {}
                     targetElement.identifier = element.identifier
                     targetElement.name = element.name
+                    targetElement.place = element.destination
+                    targetElement.time = element.startTime
+
                     acceptedArr.push(targetElement)
                 }
             })

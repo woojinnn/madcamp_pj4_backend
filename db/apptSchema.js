@@ -24,13 +24,7 @@ let apptSchema = new Schema({
         unique: true
     },
     destination: {
-        type: {
-            type: String,
-            default: 'Point'
-        },
-        coordinates: {
-            type: [Number],
-        }
+        type: String
     },
     invited: [{
         type: Schema.Types.ObjectId,
@@ -43,13 +37,7 @@ let apptSchema = new Schema({
                 ref: 'User'
             },
             departure: {
-                type: {
-                    type: String,
-                    default: 'Point'
-                },
-                coordinates: {
-                    type: [Number],
-                }
+                type: String
             }
         }],
         default: []

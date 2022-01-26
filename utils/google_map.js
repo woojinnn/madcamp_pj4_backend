@@ -18,15 +18,19 @@ async function getLatLong(address) {
     const baseUrl = 'https://maps.googleapis.com/maps/api/geocode/json?address='
     const key = '&key=AIzaSyCoW_VU0CZZl2S7T9dte4vJfHSUSQe5p2U'
 
-    const url = baseUrl + address + key
+    const url = baseUrl + encodeURI(address) + key
     console.log(url)
 
     const response = await axios.get(url)
-    console.log(JSON.stringify(response.data))
+    const result = response.data.results[0]
+    if (result === undefined) {
+        return null
+    }
 
-    return response.data
+    return result.geometry.location
 }
 
 module.exports = {
-    getRoute
+    getRoute,
+    getLatLong
 }

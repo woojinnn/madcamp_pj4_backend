@@ -47,24 +47,24 @@ module.exports = function (passport) {
             userID = getIdFromToken(token)
         } catch (error) {
             res.status(400)
-            res.json({ error: "improperly formatted token" })
+            return res.json({ error: "improperly formatted token" })
         }
 
         if (apptName === undefined || apptStartTime === undefined || apptDest === undefined) {
             res.status(400)
-            res.json({ error: "insufficient arguments sent" })
+            return res.json({ error: "insufficient arguments sent" })
         }
 
         try {
             if (Date.parse(apptStartTime) < Date.now - 86400000) {
                 res.status(400)
-                res.json({ error: "improper start time format" })
+                return res.json({ error: "improper start time format" })
             }
             apptStartTime = Date.parse(apptStartTime)
         }
         catch (error) {
             res.status(400)
-            res.json({ error: "improper start time format" })
+            return res.json({ error: "improper start time format" })
         }
 
         if (apptEndTime !== undefined) {
@@ -72,26 +72,26 @@ module.exports = function (passport) {
                 apptEndTime = Date.parse(apptEndTime)
                 if (apptStartTime > apptEndTime) {
                     res.status(400)
-                    res.json({ error: "start time is later than end time" })
+                    return res.json({ error: "start time is later than end time" })
                 }
             }
             catch (error) {
                 res.status(400)
-                res.json({ error: "improper end time format" })
+                return res.json({ error: "improper end time format" })
             }
         }
 
         try {
-            if (apptDest === undefined || apptDest.length !== 2) {
+            if (apptDest === undefined) {
                 res.status(400)
-                res.json({
+                return res.json({
                     error: "improper location format"
                 })
             }
         }
         catch (error) {
             res.json(400)
-            res.json({ error: "improper location format" })
+            return res.json({ error: "improper location format" })
         }
 
         try {
@@ -99,17 +99,17 @@ module.exports = function (passport) {
                 apptName, apptStartTime, apptEndTime, apptDest, userID
             )
             res.status(201)
-            res.json({
+            return res.json({
                 apptName: result.name,
                 apptStartTime: result.apptStartTime,
                 apptEndTime: result.apptEndTime,
-                coordinates: result.destination.coordinates,
+                destination: result.destination,
                 apptIdentifier: result.identifier
             })
         } catch (error) {
             console.log(error)
             res.status(500)
-            res.json({ error: "error on appt creation" })
+            return res.json({ error: "error on appt creation" })
         }
     })
 
@@ -194,6 +194,7 @@ module.exports = function (passport) {
     router.post('/invite', passport.authenticate('jwt', { session: false }), async (req, res) => {
         try {
             const apptId = req.body.apptId
+            console.log(apptId)
             const token = req.header('jwt')
             if (apptId === undefined) {
                 res.status(400)
@@ -297,6 +298,89 @@ module.exports = function (passport) {
             }
             else {
                 res.json({ error: "none" })
+            }
+
+        } catch (error) {
+            res.status(500)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // edit an invite to an appt
+    router.put('/edit', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+            const apptIdentifier = req.query.apptId
+
+            const apptName = req.body.apptName
+            let apptStartTime = req.body.apptStartTime
+            let apptEndTime = req.body.apptEndTime
+            let apptDest = req.body.apptDest
+
+            let userID
+            try {
+                userID = getIdFromToken(token)
+            } catch (error) {
+                res.status(400)
+                return res.json({ error: "improperly formatted token" })
+            }
+
+            if (apptName === undefined || apptStartTime === undefined || apptDest === undefined) {
+                res.status(400)
+                return res.json({ error: "insufficient arguments sent" })
+            }
+
+            try {
+                if (Date.parse(apptStartTime) < Date.now - 86400000) {
+                    res.status(400)
+                    return res.json({ error: "improper start time format" })
+                }
+                apptStartTime = Date.parse(apptStartTime)
+            }
+            catch (error) {
+                res.status(400)
+                return res.json({ error: "improper start time format" })
+            }
+
+            if (apptEndTime !== undefined) {
+                try {
+                    apptEndTime = Date.parse(apptEndTime)
+                    if (apptStartTime > apptEndTime) {
+                        res.status(400)
+                        return res.json({ error: "start time is later than end time" })
+                    }
+                }
+                catch (error) {
+                    res.status(400)
+                    return res.json({ error: "improper end time format" })
+                }
+            }
+
+            try {
+                if (apptDest === undefined) {
+                    res.status(400)
+                    return res.json({ result: false })
+                }
+            }
+            catch (error) {
+                res.status(400)
+                return res.json({ result: false })
+            }
+
+            try {
+                let result = await DBDriver.modifyAppt(
+                    apptName, apptStartTime, apptEndTime, apptDest, userID, apptIdentifier
+                )
+                if (result === null) {
+                    return res.status(400).json({ result: false })
+                }
+                res.status(201)
+                return res.json({ result: true })
+            } catch (error) {
+                console.log(error)
+                res.status(500)
+                return res.json({ result: false })
             }
 
         } catch (error) {

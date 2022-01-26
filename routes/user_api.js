@@ -168,7 +168,7 @@ module.exports = function (passport) {
                 res.json({ error: "no such user" })
             }
             else {
-                res.json({ coordinates: getDepartureResult })
+                res.json({ result: getDepartureResult })
             }
         } catch (error) {
             res.status(500)
@@ -232,6 +232,60 @@ module.exports = function (passport) {
 
             const userId = getIdFromToken(token)
             const resObj = await DBDriver.getGuestAppts(userId)
+
+            res.status(200)
+            res.json(resObj)
+        } catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Get all appts (owner, invited, accepted)
+    router.get('/invited-appts', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+
+            const userId = getIdFromToken(token)
+            const resObj = await DBDriver.getUserInvitedAppts(userId)
+
+            res.status(200)
+            res.json({appts: resObj})
+        } catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Get all appts (owner, invited, accepted)
+    router.get('/wtms', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+
+            const userId = getIdFromToken(token)
+            const resObj = await DBDriver.getUserWTMs(userId)
+
+            res.status(200)
+            res.json(resObj)
+        } catch (error) {
+            res.status(500)
+            console.log(error.message)
+            res.json({ error: error.message })
+        }
+    })
+
+
+    // Get all appts (owner, invited, accepted)
+    router.get('/appts', passport.authenticate('jwt', { session: false }), async (req, res) => {
+        try {
+            const token = req.header('jwt')
+
+            const userId = getIdFromToken(token)
+            const resObj = await DBDriver.getUserAppts(userId)
 
             res.status(200)
             res.json(resObj)
